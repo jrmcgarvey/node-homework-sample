@@ -62,7 +62,13 @@ async function sqlCommand() {
           }
           if (rows && rows.length) {
             rows.forEach((row) => {
-              const rowStrings = row.map((column) => column.toString());
+              const rowStrings = row.map((column) => {
+                if (column === null) {
+                  return "null"
+                } else {
+                  return column.toString();
+                }
+              })
               console.log(rowStrings.join("\t"));
             });
           } else {
