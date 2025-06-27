@@ -24,7 +24,7 @@ const login = async (req, res, next) => {
     if (err) return next(err);
     if (!user) return res.status(401).json({ message: "Login failed" });
     setJwtCookie(res, user);
-    const csrfToken = csrf.token(req, res);
+    const csrfToken = csrf.refresh(req, res);
     return res.json({ name: user.name, csrfToken });
   })(req, res, next);
 };
@@ -36,7 +36,7 @@ const register = async (req, res) => {
   }
   const user = await createUser(value);
   setJwtCookie(res, user);
-  const csrfToken = csrf.token(req, res);
+  const csrfToken = csrf.refresh(req, res);
   return res.json({ name: value.name, csrfToken });
 };
 
