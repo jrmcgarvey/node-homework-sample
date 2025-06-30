@@ -2,7 +2,7 @@ const passport = require("passport");
 const { userSchema } = require("../validation/userSchema");
 const jwt = require("jsonwebtoken");
 const csrf = require("host-csrf");
-const {statusCodes} = require("http-status-codes")
+const { StatusCodes } = require("http-status-codes");
 
 const { createUser } = require("../services/userService");
 
@@ -23,7 +23,10 @@ const setJwtCookie = (res, user) => {
 const login = async (req, res, next) => {
   passport.authenticate("local", { session: false }, (err, user) => {
     if (err) return next(err);
-    if (!user) return res.status(statusCodes.UNAUTHORIZED).json({ message: "Login failed" });
+    if (!user)
+      return res
+        .status(StatusCodes.UNAUTHORIZED)
+        .json({ message: "Login failed" });
     setJwtCookie(res, user);
     const csrfToken = csrf.refresh(req, res);
     return res.json({ name: user.name, csrfToken });
@@ -31,14 +34,25 @@ const login = async (req, res, next) => {
 };
 
 const register = async (req, res) => {
-  const { err, value } = userSchema.validate(req.body);
+  const { err, value } = userSchema.validate(req.body, { abortEarly: false });
   if (err) {
-    return res.status(400).res.send({ message: err.message });
+    return res.status(StatusCodes.BAD_REQUEST).res.send({ message: err.message });
   }
-  const user = await createUser(value);
+  let user = null;
+  try {
+    user = await createUser(value);
+  } catch (e) {
+    if (e.name === "PrismaClientKnownRequestError" && e.code == "P2002") {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: "A user record already exists with that email." });
+    } else {
+      throw e
+    }
+  }
   setJwtCookie(res, user);
   const csrfToken = csrf.refresh(req, res);
-  return res.status(statusCodes.CREATED).json({ name: value.name, csrfToken });
+  return res.status(StatusCodes.CREATED).json({ name: value.name, csrfToken });
 };
 
 const logoff = async (req, res) => {

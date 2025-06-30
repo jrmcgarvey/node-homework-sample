@@ -12,6 +12,9 @@ const notFoundMiddleware = require("./middleware/not-found");
 const errorHandlerMiddleware = require("./middleware/error-handler");
 const authRequired = require("./middleware/auth");
 app.use(cookieParser(process.env.JWT_SECRET));
+if (process.env.NODE_ENV === "production") {
+  app.set("trust proxy", 1);
+}
 const csrfMiddleware = require("./csrf/csrf");
 app.use(express.json({ limit: "1kb" }));
 app.use(xss());
