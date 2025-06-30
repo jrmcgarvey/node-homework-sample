@@ -1,6 +1,6 @@
 const { PrismaClient, Prisma } = require("@prisma/client");
 const { taskSchema, patchTaskSchema } = require("../validation/taskSchema.js");
-const {statusCodes} = require("http-status-codes")
+const { statusCodes } = require("http-status-codes");
 
 const prisma = new PrismaClient();
 
@@ -18,7 +18,7 @@ const index = async (req, res) => {
 };
 
 const create = async (req, res) => {
-  const { error, value } = taskSchema.validate(req.body, {abortEarly: false});
+  const { error, value } = taskSchema.validate(req.body, { abortEarly: false });
   if (error) {
     return res.status(statusCodes.BAD_REQUEST).json({ error: error.details });
   }
@@ -29,7 +29,9 @@ const create = async (req, res) => {
 };
 
 const update = async (req, res) => {
-  const { error, value } = patchTaskSchema.validate(req.body, {abortEarly: false});
+  const { error, value } = patchTaskSchema.validate(req.body, {
+    abortEarly: false,
+  });
   if (error) {
     return res.status(statusCodes.BAD_REQUEST).json({ error: error.details });
   }
@@ -58,7 +60,9 @@ const show = async (req, res) => {
     where: { userId: req.user.id, id: parseInt(req.params.id) },
   });
   if (!task) {
-    return res.status(statusCodes.NOT_FOUND).json({ message: "That task was not found." });
+    return res
+      .status(statusCodes.NOT_FOUND)
+      .json({ message: "That task was not found." });
   }
   res.json(task);
 };
