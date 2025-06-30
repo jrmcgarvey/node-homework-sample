@@ -2,7 +2,7 @@ const passport = require("passport");
 const { userSchema } = require("../validation/userSchema");
 const jwt = require("jsonwebtoken");
 const csrf = require("host-csrf");
-const {statusCodes} = require("http-status-codes")
+const { statusCodes } = require("http-status-codes");
 
 const { createUser } = require("../services/userService");
 
@@ -23,7 +23,10 @@ const setJwtCookie = (res, user) => {
 const login = async (req, res, next) => {
   passport.authenticate("local", { session: false }, (err, user) => {
     if (err) return next(err);
-    if (!user) return res.status(statusCodes.UNAUTHORIZED).json({ message: "Login failed" });
+    if (!user)
+      return res
+        .status(statusCodes.UNAUTHORIZED)
+        .json({ message: "Login failed" });
     setJwtCookie(res, user);
     const csrfToken = csrf.refresh(req, res);
     return res.json({ name: user.name, csrfToken });
