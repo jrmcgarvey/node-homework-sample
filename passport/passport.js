@@ -15,9 +15,8 @@ passport.use(
       try {
         const { user, isValid } = await verifyUserPassword(username, password);
         if (!isValid)
-          return done(null, false, { message: "Authentication failed." });
-
-        return done(null, user); // this user goes to req.user
+          return done(null, null, { message: "Authentication failed." });
+        return done(null, {id: user.id}); // this object goes to req.user.
       } catch (err) {
         return done(err);
       }
