@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "commonjs",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest --verbose --roots ./test"
   },
   "author": "",
   "license": "ISC",
@@ -32,6 +32,7 @@
     "eslint": "^9.24.0",
     "globals": "^16.0.0",
     "jest": "^30.0.3",
+    "node-mocks-http": "^1.17.2",
     "nodemon": "^3.1.10",
     "pg": "^8.16.2",
     "pg-cursor": "^2.15.2",
