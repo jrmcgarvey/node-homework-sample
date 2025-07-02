@@ -33,6 +33,7 @@
     "axios-cookiejar-support": "^6.0.3",
     "csv-parser": "^3.2.0",
     "eslint": "^9.24.0",
+    "eslint-plugin-jest": "^29.0.1",
     "globals": "^16.0.0",
     "jest": "^30.0.3",
     "node-mocks-http": "^1.17.2",

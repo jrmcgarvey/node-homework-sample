@@ -22,26 +22,27 @@ const setJwtCookie = (res, user) => {
 
 const login = async (req, res) => {
   const loginPromise = new Promise((resolve, reject) => {
-  passport.authenticate("local", { session: false }, (err, user) => {
-    if (err) return reject(err);
-    if (!user) {
-      res
-        .status(StatusCodes.UNAUTHORIZED)
-        .json({ message: "Login failed" });
-    } else {
-    setJwtCookie(res, user);
-    const csrfToken = csrf.refresh(req, res);
-    res.json({ name: user.name, csrfToken });
-    }
-    resolve()
-  })(req, res)});
+    passport.authenticate("local", { session: false }, (err, user) => {
+      if (err) return reject(err);
+      if (!user) {
+        res.status(StatusCodes.UNAUTHORIZED).json({ message: "Login failed" });
+      } else {
+        setJwtCookie(res, user);
+        const csrfToken = csrf.refresh(req, res);
+        res.json({ name: user.name, csrfToken });
+      }
+      resolve();
+    })(req, res);
+  });
   await loginPromise;
 };
 
 const register = async (req, res) => {
   const { err, value } = userSchema.validate(req.body, { abortEarly: false });
   if (err) {
-    return res.status(StatusCodes.BAD_REQUEST).res.send({ message: err.message });
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .res.send({ message: err.message });
   }
   let user = null;
   try {
@@ -52,7 +53,7 @@ const register = async (req, res) => {
         .status(StatusCodes.BAD_REQUEST)
         .json({ message: "A user record already exists with that email." });
     } else {
-      throw e
+      throw e;
     }
   }
   setJwtCookie(res, user);

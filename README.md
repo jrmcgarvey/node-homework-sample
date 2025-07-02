@@ -14,11 +14,11 @@ Please follow the following steps to set up the repository.
 3. Log on to your GitHub account, and create an empty repository called `node-homework`. This repository must be public. Do not create a README or `.gitignore` or license. Once you have done this, copy the URL for the repository to your clipboard. (There is a green button on the repository window, with a dropdown where you can obtain the URL you need. You may use either HTTPS or SSH, depending on your current practice.)
 4. On your laptop, switch to the node-homework directory, and within the terminal, do the following commands:
    `bash
-    git remote set-url origin <URL> # This is the URL you copied to your clipboard
-    git remote add upstream https://github.com/Code-the-Dream-School/node-homework
-    git push origin main
-    npm install
-    `
+ git remote set-url origin <URL> # This is the URL you copied to your clipboard
+ git remote add upstream https://github.com/Code-the-Dream-School/node-homework
+ git push origin main
+ npm install
+ `
    You are populating your own repository with the contents of this Code the Dream School repository. You do it this way, instead of creating a fork, because you want the default target for your homework pull requests to be your own repository. The `npm install` gives you the packages you need to run the homework programs.
 
 Once in a while, it may be necessary to get an update to this repository from Code the Dream School. You will be notified via Slack. In this case, you'd do the following:
