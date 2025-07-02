@@ -47,7 +47,8 @@ app.use(
 );
 
 require("./passport/passport");
-
+const contentChecker = require("./middleware/content-checker");
+app.use(contentChecker);
 const userRouter = require("./routes/user");
 app.use("/user", userRouter);
 const taskRouter = require("./routes/task");
