@@ -14,14 +14,4 @@ const userSchema = Joi.object({
     }),
 });
 
-const patchUserSchema = Joi.object({
-  email: Joi.string().trim().email().not(null),
-  name: Joi.string().trim().min(3).max(30).not(null),
-  password: Joi.string()
-    .trim()
-    .min(8)
-    .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).+$/)
-    .not(null),
-});
-
-module.exports = { userSchema, patchUserSchema };
+module.exports = { userSchema };
