@@ -22,6 +22,8 @@ const setJwtCookie = (res, user) => {
 
 const login = async (req, res) => {
   const loginPromise = new Promise((resolve, reject) => {
+    // this promise is needed to enable testing.  The test must see the result
+    // after the callback from passport.authenticate().
     passport.authenticate("local", { session: false }, (err, user) => {
       if (err) return reject(err);
       if (!user) {
@@ -42,7 +44,7 @@ const register = async (req, res) => {
   if (err) {
     return res
       .status(StatusCodes.BAD_REQUEST)
-      .res.send({ message: err.message });
+      .res.json({ message: err.message });
   }
   let user = null;
   try {
