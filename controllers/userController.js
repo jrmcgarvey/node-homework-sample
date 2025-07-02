@@ -20,17 +20,22 @@ const setJwtCookie = (res, user) => {
   });
 };
 
-const login = async (req, res, next) => {
+const login = async (req, res) => {
+  const loginPromise = new Promise((resolve, reject) => {
   passport.authenticate("local", { session: false }, (err, user) => {
-    if (err) return next(err);
-    if (!user)
-      return res
+    if (err) return reject(err);
+    if (!user) {
+      res
         .status(StatusCodes.UNAUTHORIZED)
         .json({ message: "Login failed" });
+    } else {
     setJwtCookie(res, user);
     const csrfToken = csrf.refresh(req, res);
-    return res.json({ name: user.name, csrfToken });
-  })(req, res, next);
+    res.json({ name: user.name, csrfToken });
+    }
+    resolve()
+  })(req, res)});
+  await loginPromise;
 };
 
 const register = async (req, res) => {

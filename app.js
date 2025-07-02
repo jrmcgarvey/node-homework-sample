@@ -56,15 +56,14 @@ app.use("/tasks", csrfMiddleware, authRequired, taskRouter);
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
 
-const start = async () => {
+let server = null
   try {
-    app.listen(port, () =>
+    server= app.listen(port, () =>
       console.log(`Server is listening on port ${port}...`),
     );
   } catch (error) {
     console.log(error);
   }
-};
 
-start();
-module.exports = app;
+
+module.exports = {app, server}

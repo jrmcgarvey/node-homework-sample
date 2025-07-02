@@ -8,7 +8,7 @@ const index = async (req, res) => {
   const allTasks = await prisma.Task.findMany({
     where: {
       userId: req.user.id,
-    },
+    }, omit: { userId: true },
   });
   if (allTasks.length == 0) {
     res.status(StatusCodes.NOT_FOUND).json({ message: "No tasks were found." });
@@ -24,7 +24,7 @@ const create = async (req, res) => {
   }
   value.userId = req.user.id;
 
-  const newTask = await prisma.Task.create({ data: value });
+  const newTask = await prisma.Task.create({ data: value, omit: { userId: true }, });
   res.status(StatusCodes.CREATED).json(newTask);
 };
 
@@ -42,7 +42,7 @@ const update = async (req, res) => {
       where: {
         id: parseInt(req.params.id),
         userId: req.user.id,
-      },
+      }, omit: { userId: true },
     });
   } catch (e) {
     if (e.name === "PrismaClientKnownRequestError") {
@@ -58,7 +58,7 @@ const update = async (req, res) => {
 
 const show = async (req, res) => {
   const task = await prisma.Task.findFirst({
-    where: { userId: req.user.id, id: parseInt(req.params.id) },
+    where: { userId: req.user.id, id: parseInt(req.params.id) ,omit: { userId: true },},
   });
   if (!task) {
     return res
@@ -74,7 +74,7 @@ const deleteTask = async (req, res) => {
       where: {
         id: parseInt(req.params.id),
         userId: req.user.Id,
-      },
+      },omit: { userID: true },
     });
   } catch (e) {
     if (typeof e == Prisma.PrismaClientKnownRequestError) {
