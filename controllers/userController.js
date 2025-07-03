@@ -1,7 +1,7 @@
 const passport = require("passport");
 const { userSchema } = require("../validation/userSchema");
 const jwt = require("jsonwebtoken");
-const csrf = require("host-csrf");
+const { refreshToken } = require("host-csrf");
 const { StatusCodes } = require("http-status-codes");
 
 const { createUser } = require("../services/userService");
@@ -10,15 +10,18 @@ const setJwtCookie = (res, user) => {
   // Sign JWT
   const payload = { id: user.id };
   const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" });
+  const sameSite = (process.env.NODE_ENV === "production") ? "None" : "Strict"
 
   // Set cookie
   res.cookie("jwt", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "None",
+    sameSite,
     maxAge: 3600000,
   });
 };
+if (process.env.NODE_ENV != "production")
+  process.env.XS_COOKIE_DEVELOPMENT_MODE="true";
 
 const login = async (req, res) => {
   const loginPromise = new Promise((resolve, reject) => {
@@ -30,7 +33,7 @@ const login = async (req, res) => {
         res.status(StatusCodes.UNAUTHORIZED).json({ message: "Login failed" });
       } else {
         setJwtCookie(res, user);
-        const csrfToken = csrf.refresh(req, res);
+        const csrfToken = refreshToken(req, res);
         res.json({ name: user.name, csrfToken });
       }
       resolve();
@@ -59,7 +62,7 @@ const register = async (req, res) => {
     }
   }
   setJwtCookie(res, user);
-  const csrfToken = csrf.refresh(req, res);
+  const csrfToken = refreshToken(req, res);
   return res.status(StatusCodes.CREATED).json({ name: value.name, csrfToken });
 };
 
