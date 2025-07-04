@@ -23,13 +23,10 @@
     "jsonwebtoken": "^9.0.2",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
-    "passport-local": "^1.0.0",
-    "tough-cookie": "^5.1.2"
+    "passport-local": "^1.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.24.0",
-    "axios": "^1.10.0",
-    "axios-cookiejar-support": "^6.0.3",
     "csv-parser": "^3.2.0",
     "eslint": "^9.24.0",
     "eslint-plugin-jest": "^29.0.1",
@@ -40,6 +37,7 @@
     "pg": "^8.16.2",
     "pg-cursor": "^2.15.2",
     "prettier": "^3.6.1",
-    "prisma": "^6.10.1"
+    "prisma": "^6.10.1",
+    "supertest": "^7.1.1"
   }
 }

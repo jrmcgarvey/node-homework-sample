@@ -1,22 +1,13 @@
-const axios = require("axios");
 require("dotenv").config("../.env");
+const request = require("supertest")
 process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
+const {app, server} = require("../app")
+const agent = request.agent(app)
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
-let jar = null;
-let client = null;
+
 beforeAll(async () => {
   // clear database
-  const tough = await import("tough-cookie");
-  const { wrapper } = await import("axios-cookiejar-support");
-  jar = new tough.CookieJar();
-  client = wrapper(
-    axios.create({
-      jar,
-      baseURL: process.env.TEST_TARGET_URL,
-      withCredentials: true,
-    }),
-  );
   await prisma.Task.deleteMany(); // delete all tasks
   await prisma.User.deleteMany(); // delete all users
 });
@@ -28,14 +19,15 @@ describe("register a user ", () => {
       email: "jdeere@example.com",
       password: "Pa$$word20",
     };
-    const res = await client.post("/user/register", newUser);
+    const res = await agent.post("/user/register", newUser).send(newUser);
     expect(res.status).toBe(201);
-    expect(res.data.name).toBe("John Deere");
-    expect(res.data.csrfToken).toBeDefined();
-    const cookies = jar.getCookiesSync(process.env.TEST_TARGET_URL);
-    const jwtCookie = cookies.find((cookie) => cookie.key === "jwt");
-    expect(jwtCookie).toBeDefined();
-    expect(jwtCookie.httpOnly).toBe(true);
-
+    expect(res.body.name).toBe("John Deere");
+    expect(res.body.csrfToken).toBeDefined();
+    console.log(res.headers)
+    expect(res.headers["set-cookie"]).toBeDefined();
+    const cookie = res.headers["set-cookie"][0]
+    console.log(cookie)
+    expect(cookie.substring(0,4)).toBe("jwt=")
+    expect(cookie).toContain("HttpOnly;")
   });
 });
