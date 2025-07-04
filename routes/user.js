@@ -1,5 +1,4 @@
 const express = require("express");
-// const csrfMiddleware = require("../csrf/csrf");
 const auth = require("../middleware/auth")
 
 const router = express.Router();

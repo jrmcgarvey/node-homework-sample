@@ -23,8 +23,6 @@ const setJwtCookie = (req, res, user) => {
     maxAge: 3600000,
   });
 };
-if (process.env.NODE_ENV != "production")
-  process.env.XS_COOKIE_DEVELOPMENT_MODE="true";
 
 const login = async (req, res) => {
   const loginPromise = new Promise((resolve, reject) => {
@@ -36,7 +34,6 @@ const login = async (req, res) => {
         res.status(StatusCodes.UNAUTHORIZED).json({ message: "Login failed" });
       } else {
         setJwtCookie(req, res, user);
-        // const csrfToken = refreshToken(req, res);
         res.json({ name: user.name, csrfToken: req.user.csrfToken });
       }
       resolve();
@@ -65,7 +62,6 @@ const register = async (req, res) => {
     }
   }
   setJwtCookie(req, res, user);
-  //const csrfToken = refreshToken(req, res);
   return res.status(StatusCodes.CREATED).json({ name: value.name, csrfToken: req.user.csrfToken });
 };
 
