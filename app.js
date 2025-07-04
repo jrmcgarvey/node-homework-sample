@@ -1,4 +1,6 @@
 require("dotenv").config();
+if (process.env.NODE_ENV === "test")
+  process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
 const express = require("express");
 const cookieParser = require("cookie-parser");
 const helmet = require("helmet");
@@ -57,15 +59,13 @@ app.use("/tasks", authRequired, taskRouter);
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
 
-const start = async () => {
-  try {
-    app.listen(port, () =>
-      console.log(`Server is listening on port ${port}...`),
-    );
-  } catch (error) {
-    console.log(error);
-  }
-};
+let server = null;
+try {
+  server = app.listen(port, () =>
+    console.log(`Server is listening on port ${port}...`),
+  );
+} catch (error) {
+  console.log(error);
+}
 
-start();
-module.exports = app;
+module.exports = { app, server };
