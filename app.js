@@ -1,4 +1,6 @@
 require("dotenv").config();
+if (process.env.NODE_ENV === "test")
+  process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
 const express = require("express");
 const cookieParser = require("cookie-parser");
 const helmet = require("helmet");
@@ -11,11 +13,10 @@ const app = express();
 const notFoundMiddleware = require("./middleware/not-found");
 const errorHandlerMiddleware = require("./middleware/error-handler");
 const authRequired = require("./middleware/auth");
-app.use(cookieParser(process.env.JWT_SECRET));
+app.use(cookieParser(process.env.JWT_SECRET)); // we don't really need signed cookies
 if (process.env.NODE_ENV === "production") {
   app.set("trust proxy", 1);
 }
-const csrfMiddleware = require("./csrf/csrf");
 app.use(express.json({ limit: "1kb" }));
 app.use(xss());
 
@@ -52,20 +53,19 @@ app.use(contentChecker);
 const userRouter = require("./routes/user");
 app.use("/user", userRouter);
 const taskRouter = require("./routes/task");
-app.use("/tasks", csrfMiddleware, authRequired, taskRouter);
+
+app.use("/tasks", authRequired, taskRouter);
 
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
 
-const start = async () => {
-  try {
-    app.listen(port, () =>
-      console.log(`Server is listening on port ${port}...`),
-    );
-  } catch (error) {
-    console.log(error);
-  }
-};
+let server = null;
+try {
+  server = app.listen(port, () =>
+    console.log(`Server is listening on port ${port}...`),
+  );
+} catch (error) {
+  console.log(error);
+}
 
-start();
-module.exports = app;
+module.exports = { app, server };
