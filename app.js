@@ -15,7 +15,7 @@ app.use(cookieParser(process.env.JWT_SECRET));
 if (process.env.NODE_ENV === "production") {
   app.set("trust proxy", 1);
 }
-const csrfMiddleware = require("./csrf/csrf");
+//const csrfMiddleware = require("./csrf/csrf");
 app.use(express.json({ limit: "1kb" }));
 app.use(xss());
 
@@ -52,7 +52,8 @@ app.use(contentChecker);
 const userRouter = require("./routes/user");
 app.use("/user", userRouter);
 const taskRouter = require("./routes/task");
-app.use("/tasks", csrfMiddleware, authRequired, taskRouter);
+// app.use("/tasks", csrfMiddleware, authRequired, taskRouter);
+app.use("/tasks", authRequired, taskRouter);
 
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
