@@ -21,8 +21,6 @@ beforeAll(async () => {
   await prisma.User.deleteMany(); // delete all users
 });
 
-//(async ()=>{
-
 describe("register a user ", () => {
   it("it creates the user entry", async () => {
     const newUser = {
@@ -39,18 +37,5 @@ describe("register a user ", () => {
     expect(jwtCookie).toBeDefined();
     expect(jwtCookie.httpOnly).toBe(true);
 
-    //   .set('Accept', 'application/json')
-    //   .expect('Content-Type', /json/)
-    //   .expect(201)
-    //   .expect(Cookies.set({name:"csrfToken", options: {httponly: true, secure: true}}))
-    //   .expect(Cookies.set({name: "jwt", options: {httponly: true, secure: true}}))
-    //   .end((err,res) => {
-    //     if (!err) {
-    //         expect(res.body.name).toBeDefined()
-    //         expect(res.body.CSRFToken).toBeDefined()
-    //     }
-    //   })
-    //   done()
   });
 });
-//})()

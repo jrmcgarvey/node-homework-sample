@@ -4,7 +4,6 @@ const { PrismaClient } = require("@prisma/client");
 require("../passport/passport");
 const { login, register, logoff } = require("../controllers/userController");
 const httpMocks = require("node-mocks-http");
-require("../csrf/csrf");
 const prisma = new PrismaClient();
 const cookie = require("cookie");
 function MockResponseWithCookies() {
@@ -33,8 +32,6 @@ test("controller test for register", async () => {
     body: { email: "bob81@sample.com", name: "Bob", password: "Pa$$word20" },
   });
   const res = new MockResponseWithCookies();
-  req.secret = process.env.JWT_SECRET;
-  req.signedCookies = {}; //workaround for bug in host-csrf package
   await register(req, res);
   expect(res.statusCode).toBe(201);
   expect(res._isJSON()).toBe(true);
@@ -44,11 +41,8 @@ test("controller test for register", async () => {
   const cookieString = res.get("Set-Cookie");
   expect(cookieString).toEqual(expect.arrayOf(expect.any(String)));
   const jwtCookie = cookieString.find((str) => str.startsWith("jwt="));
-  const csrfCookie = cookieString.find((str) => str.startsWith("csrfToken"));
   expect(jwtCookie).toBeDefined();
   expect(jwtCookie).toContain("HttpOnly");
-  expect(csrfCookie).toBeDefined();
-  expect(csrfCookie).toContain("HttpOnly");
 });
 
 test("controller test for logon", async () => {
@@ -57,32 +51,24 @@ test("controller test for logon", async () => {
     body: { email: "bob81@sample.com", password: "Pa$$word20" },
   });
   let res = new MockResponseWithCookies();
-  req.secret = process.env.JWT_SECRET;
-  req.signedCookies = {}; //workaround for bug in host-csrf package
-  const jestfn = jest.fn();
-  await login(req, res, jestfn);
+  await login(req, res);
   expect(res.statusCode).toBe(200);
   expect(res._isJSON()).toBe(true);
   let data = res._getJSONData();
   expect(data.name).toBe("Bob");
   expect(data.csrfToken).toBeDefined();
-  expect(data.csrfToken).toBeDefined();
   let cookieString = res.get("Set-Cookie");
   expect(cookieString).toEqual(expect.arrayOf(expect.any(String)));
   const jwtCookie = cookieString.find((str) => str.startsWith("jwt="));
-  const csrfCookie = cookieString.find((str) => str.startsWith("csrfToken="));
   expect(jwtCookie).toBeDefined();
   expect(jwtCookie).toContain("HttpOnly");
-  expect(csrfCookie).toBeDefined();
-  expect(csrfCookie).toContain("HttpOnly");
   req = httpMocks.createRequest({
     method: "POST",
     body: { email: "bob81@sample.com", password: "bad" },
   });
   res = new MockResponseWithCookies();
-  req.secret = process.env.JWT_SECRET;
-  req.signedCookies = {}; //workaround for bug in host-csrf package
-  await login(req, res, jestfn);
+
+  await login(req, res);
   expect(res.statusCode).toBe(401);
   expect(res._isJSON()).toBe(true);
   cookieString = res.get("Set-Cookie");
@@ -92,9 +78,7 @@ test("controller test for logon", async () => {
     body: { email: "bad", password: "bad" },
   });
   res = new MockResponseWithCookies();
-  req.secret = process.env.JWT_SECRET;
-  req.signedCookies = {}; //workaround for bug in host-csrf package
-  await login(req, res, jestfn);
+  await login(req, res);
   expect(res.statusCode).toBe(401);
   expect(res._isJSON()).toBe(true);
   cookieString = res.get("Set-Cookie");

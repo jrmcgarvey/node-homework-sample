@@ -1,4 +1,6 @@
 require("dotenv").config();
+if (process.env.NODE_ENV === "test")
+  process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
 const express = require("express");
 const cookieParser = require("cookie-parser");
 const helmet = require("helmet");

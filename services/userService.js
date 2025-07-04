@@ -30,7 +30,7 @@ async function createUser(data) {
 }
 
 async function verifyUserPassword(userId, inputPassword) {
-  const user = await prisma.user.findUnique({ where: { email: userId }, mode: "insensitive" });
+  const user = await prisma.user.findFirst({ where: { email: { equals: userId, mode: "insensitive" }}});
   if (!user) return { user: null, isValid: false };
 
   return {
