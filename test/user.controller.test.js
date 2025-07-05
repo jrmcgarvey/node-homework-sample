@@ -17,6 +17,15 @@ function MockResponseWithCookies() {
     currentHeader.push(serialized);
     res.setHeader("Set-Cookie", currentHeader);
   };
+  res.oldJsonMethod = res.json
+  res.jsonPromise = new Promise(resolve => {
+    res.jsonPromiseResolve = resolve
+  })
+  res.json = (...args) => {
+    res.oldJsonMethod(...args)
+    res.jsonPromiseResolve()
+  }
+  
   return res;
 }
 
@@ -52,6 +61,7 @@ test("controller test for logon", async () => {
   });
   let res = new MockResponseWithCookies();
   await login(req, res);
+  await res.jsonPromise;
   expect(res.statusCode).toBe(200);
   expect(res._isJSON()).toBe(true);
   let data = res._getJSONData();
@@ -69,6 +79,7 @@ test("controller test for logon", async () => {
   res = new MockResponseWithCookies();
 
   await login(req, res);
+  await res.jsonPromise;
   expect(res.statusCode).toBe(401);
   expect(res._isJSON()).toBe(true);
   cookieString = res.get("Set-Cookie");
@@ -79,6 +90,7 @@ test("controller test for logon", async () => {
   });
   res = new MockResponseWithCookies();
   await login(req, res);
+  await res.jsonPromise;
   expect(res.statusCode).toBe(401);
   expect(res._isJSON()).toBe(true);
   cookieString = res.get("Set-Cookie");
