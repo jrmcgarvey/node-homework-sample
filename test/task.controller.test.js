@@ -1,4 +1,4 @@
-require("dotenv").config("../.env");
+require("dotenv").config({path: "../.env"});
 process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
 const { PrismaClient } = require("@prisma/client");
 const { createUser } = require("../services/userService");

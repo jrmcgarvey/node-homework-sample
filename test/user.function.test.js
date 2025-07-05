@@ -1,4 +1,4 @@
-require("dotenv").config("../.env");
+require("dotenv").config({path: "../.env"});
 const request = require("supertest")
 process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
 const {app, server} = require("../app")
@@ -7,7 +7,7 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 beforeAll(async () => {
-  // clear database
+  // clear databaseS
   await prisma.Task.deleteMany(); // delete all tasks
   await prisma.User.deleteMany(); // delete all users
 });

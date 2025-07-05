@@ -1,4 +1,4 @@
-require("dotenv").config("../.env");
+require('dotenv').config({ path: "../.env"});
 process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
 const { PrismaClient } = require("@prisma/client");
 require("../passport/passport");
@@ -17,15 +17,18 @@ function MockResponseWithCookies() {
     currentHeader.push(serialized);
     res.setHeader("Set-Cookie", currentHeader);
   };
-  res.oldJsonMethod = res.json
-  res.jsonPromise = new Promise(resolve => {
-    res.jsonPromiseResolve = resolve
-  })
-  res.json = (...args) => {
-    res.oldJsonMethod(...args)
-    res.jsonPromiseResolve()
+
+  res.jsonPromise = () => {
+    return new Promise(resolve => {
+      res.oldJsonMethod = res.json
+      res.json = (...args) => {
+        res.oldJsonMethod(...args)
+        res.json = res.oldJsonMethod
+        resolve()
+      }
+    })
   }
-  
+
   return res;
 }
 
@@ -60,8 +63,9 @@ test("controller test for logon", async () => {
     body: { email: "bob81@sample.com", password: "Pa$$word20" },
   });
   let res = new MockResponseWithCookies();
-  await login(req, res);
-  await res.jsonPromise;
+  let jsonPromise = res.jsonPromise()
+  login(req, res);
+  await jsonPromise;
   expect(res.statusCode).toBe(200);
   expect(res._isJSON()).toBe(true);
   let data = res._getJSONData();
@@ -77,9 +81,9 @@ test("controller test for logon", async () => {
     body: { email: "bob81@sample.com", password: "bad" },
   });
   res = new MockResponseWithCookies();
-
-  await login(req, res);
-  await res.jsonPromise;
+  jsonPromise = res.jsonPromise()
+  login(req, res);
+  await jsonPromise;
   expect(res.statusCode).toBe(401);
   expect(res._isJSON()).toBe(true);
   cookieString = res.get("Set-Cookie");
@@ -89,8 +93,9 @@ test("controller test for logon", async () => {
     body: { email: "bad", password: "bad" },
   });
   res = new MockResponseWithCookies();
-  await login(req, res);
-  await res.jsonPromise;
+  jsonPromise = res.jsonPromise()
+  login(req, res);
+  await jsonPromise;
   expect(res.statusCode).toBe(401);
   expect(res._isJSON()).toBe(true);
   cookieString = res.get("Set-Cookie");
