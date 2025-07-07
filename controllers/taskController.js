@@ -1,4 +1,4 @@
-const { PrismaClient, Prisma } = require("@prisma/client");
+const { PrismaClient } = require("@prisma/client");
 const { taskSchema, patchTaskSchema } = require("../validation/taskSchema.js");
 const { StatusCodes } = require("http-status-codes");
 
@@ -39,26 +39,15 @@ const update = async (req, res) => {
   if (error) {
     return res.status(StatusCodes.BAD_REQUEST).json({ error: error.details });
   }
-  let newTask;
-  try {
-    newTask = await prisma.Task.update({
-      data: value,
-      where: {
-        id: parseInt(req.params.id),
-        userId: req.user.id,
-      },
-      omit: { userId: true },
-    });
-  } catch (e) {
-    if (e.name === "PrismaClientKnownRequestError") {
-      console.log("prisma request error", JSON.stringify(e));
-      return res
-        .status(StatusCodes.BAD_REQUEST)
-        .json({ message: "The entry could not be updated" });
-    }
-    throw e; // any other kind of error
-  }
-  res.json(newTask);
+  const updated = await prisma.Task.updateMany({
+    data: value,
+    where: {
+      id: parseInt(req.params.id),
+      userId: req.user.id,
+    },
+  });
+  if (!updated.count) res.status(StatusCodes.NOT_FOUND);
+  res.json({});
 };
 
 const show = async (req, res) => {
@@ -66,8 +55,8 @@ const show = async (req, res) => {
     where: {
       userId: req.user.id,
       id: parseInt(req.params.id),
-      omit: { userId: true },
     },
+    omit: { userId: true },
   });
   if (!task) {
     return res
@@ -77,24 +66,14 @@ const show = async (req, res) => {
   res.json(task);
 };
 const deleteTask = async (req, res) => {
-  let newTask;
-  try {
-    newTask = await prisma.Task.delete({
-      where: {
-        id: parseInt(req.params.id),
-        userId: req.user.Id,
-      },
-      omit: { userID: true },
-    });
-  } catch (e) {
-    if (typeof e == Prisma.PrismaClientKnownRequestError) {
-      return res
-        .status(StatusCodes.BAD_REQUEST)
-        .json({ message: "The entry could not be updated" });
-    }
-    throw e; // any other kind of error
-  }
-  res.json(newTask);
+  const deleted = await prisma.Task.deleteMany({
+    where: {
+      id: parseInt(req.params.id),
+      userId: req.user.id,
+    },
+  });
+  if (!deleted.count) res.status(StatusCodes.NOT_FOUND);
+  res.json({});
 };
 
 module.exports = { index, create, show, update, deleteTask };
