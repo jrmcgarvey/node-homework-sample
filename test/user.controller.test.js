@@ -1,10 +1,14 @@
-require('dotenv').config({ path: "../.env"});
-process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
+require("dotenv").config();
 const { PrismaClient } = require("@prisma/client");
-require("../passport/passport");
-const { login, register, logoff } = require("../controllers/userController");
+const { createUser } = require("../services/userService");
 const httpMocks = require("node-mocks-http");
-const prisma = new PrismaClient();
+const { login, register, logoff } = require("../controllers/userController");
+require("../passport/passport");
+
+// a few useful globals
+let saveRes = null;
+let saveData = null;
+
 const cookie = require("cookie");
 function MockResponseWithCookies() {
   const res = httpMocks.createResponse();
@@ -19,99 +23,118 @@ function MockResponseWithCookies() {
   };
 
   res.jsonPromise = () => {
-    return new Promise(resolve => {
-      res.oldJsonMethod = res.json
+    return new Promise((resolve) => {
+      res.oldJsonMethod = res.json;
       res.json = (...args) => {
-        res.oldJsonMethod(...args)
-        res.json = res.oldJsonMethod
-        resolve()
-      }
-    })
-  }
+        res.oldJsonMethod(...args);
+        res.json = res.oldJsonMethod;
+        resolve();
+      };
+    });
+  };
 
   return res;
 }
 
 beforeAll(async () => {
   // clear database
+  const prisma = new PrismaClient();
   await prisma.Task.deleteMany(); // delete all tasks
   await prisma.User.deleteMany(); // delete all users
+  await createUser({
+    email: "bob@sample.com",
+    password: "Pa$$word20",
+    name: "Bob",
+  });
 });
+let jwtCookie;
 
-test("controller test for register", async () => {
-  const req = httpMocks.createRequest({
-    method: "POST",
-    body: { email: "bob81@sample.com", name: "Bob", password: "Pa$$word20" },
+describe("testing login, register, and logoff", () => {
+  it("33. The user can be logged on", async () => {
+    const req = httpMocks.createRequest({
+      method: "POST",
+      body: { email: "bob@sample.com", password: "Pa$$word20" },
+    });
+    saveRes = MockResponseWithCookies();
+    const jsonPromise = saveRes.jsonPromise();
+    login(req, saveRes); // no need for await here
+    await jsonPromise; // because we do it here, to return after the res.json().
+    expect(saveRes.statusCode).toBe(200); // success!
   });
-  const res = new MockResponseWithCookies();
-  await register(req, res);
-  expect(res.statusCode).toBe(201);
-  expect(res._isJSON()).toBe(true);
-  const data = res._getJSONData();
-  expect(data.name).toBe("Bob");
-  expect(data.csrfToken).toBeDefined();
-  const cookieString = res.get("Set-Cookie");
-  expect(cookieString).toEqual(expect.arrayOf(expect.any(String)));
-  const jwtCookie = cookieString.find((str) => str.startsWith("jwt="));
-  expect(jwtCookie).toBeDefined();
-  expect(jwtCookie).toContain("HttpOnly");
-});
-
-test("controller test for logon", async () => {
-  let req = httpMocks.createRequest({
-    method: "POST",
-    body: { email: "bob81@sample.com", password: "Pa$$word20" },
+  it("35. A string in the Set-Cookie array starts with jwt=.", () => {
+    const setCookieArray = saveRes.get("Set-Cookie");
+    jwtCookie = setCookieArray.find((str) => str.startsWith("jwt="));
+    expect(jwtCookie).toBeDefined();
   });
-  let res = new MockResponseWithCookies();
-  let jsonPromise = res.jsonPromise()
-  login(req, res);
-  await jsonPromise;
-  expect(res.statusCode).toBe(200);
-  expect(res._isJSON()).toBe(true);
-  let data = res._getJSONData();
-  expect(data.name).toBe("Bob");
-  expect(data.csrfToken).toBeDefined();
-  let cookieString = res.get("Set-Cookie");
-  expect(cookieString).toEqual(expect.arrayOf(expect.any(String)));
-  const jwtCookie = cookieString.find((str) => str.startsWith("jwt="));
-  expect(jwtCookie).toBeDefined();
-  expect(jwtCookie).toContain("HttpOnly");
-  req = httpMocks.createRequest({
-    method: "POST",
-    body: { email: "bob81@sample.com", password: "bad" },
+  it("36. That string contains HttpOnly;.", () => {
+    expect(jwtCookie).toContain("HttpOnly");
   });
-  res = new MockResponseWithCookies();
-  jsonPromise = res.jsonPromise()
-  login(req, res);
-  await jsonPromise;
-  expect(res.statusCode).toBe(401);
-  expect(res._isJSON()).toBe(true);
-  cookieString = res.get("Set-Cookie");
-  expect(cookieString).toBeUndefined();
-  req = httpMocks.createRequest({
-    method: "POST",
-    body: { email: "bad", password: "bad" },
+  it("37. returns the expected name.", () => {
+    saveData = saveRes._getJSONData();
+    expect(saveData.name).toBe("Bob");
   });
-  res = new MockResponseWithCookies();
-  jsonPromise = res.jsonPromise()
-  login(req, res);
-  await jsonPromise;
-  expect(res.statusCode).toBe(401);
-  expect(res._isJSON()).toBe(true);
-  cookieString = res.get("Set-Cookie");
-  expect(cookieString).toBeUndefined();
-});
-
-test("controller test for logoff", async () => {
-  let req = httpMocks.createRequest({
-    method: "POST",
-    body: { email: "bob81@sample.com", password: "Pa$$word20" },
+  it("38. returns a csrfToken", () => {
+    expect(saveData.csrfToken).toBeDefined();
   });
-  let res = new MockResponseWithCookies();
-  await logoff(req, res);
-  const cookieString = res.get("Set-Cookie");
-  expect(cookieString).toEqual(expect.arrayOf(expect.any(String)));
-  const jwtCookie = cookieString.find((str) => str.startsWith("jwt="));
-  expect(jwtCookie).toBeDefined();
-  expect(jwtCookie).toContain("Jan 1970"); // this clears the cookie
+  it("39. A logon attempt with a bad password returns a 401", async () => {
+    const req = httpMocks.createRequest({
+      method: "POST",
+      body: { email: "bob@sample.com", password: "bad password" },
+    });
+    saveRes = MockResponseWithCookies();
+    const jsonPromise = saveRes.jsonPromise();
+    login(req, saveRes);
+    await jsonPromise;
+    expect(saveRes.statusCode).toBe(401);
+  });
+  it("40. You can't register with an email address that is already registered.", async () => {
+    const req = httpMocks.createRequest({
+      method: "POST",
+      body: {
+        email: "bob@sample.com",
+        name: "another Bob",
+        password: "Pa$$word20",
+      },
+    });
+    saveRes = MockResponseWithCookies();
+    await register(req, saveRes);
+    expect(saveRes.statusCode).toBe(400);
+  });
+  it("41. You can register an additional user.", async () => {
+    const req = httpMocks.createRequest({
+      method: "POST",
+      body: {
+        email: "manuel@sample.com",
+        name: "Manuel",
+        password: "Pa$$word20",
+      },
+    });
+    saveRes = MockResponseWithCookies();
+    await register(req, saveRes);
+    expect(saveRes.statusCode).toBe(201);
+  });
+  it("42. You can logon as that new user.", async () => {
+    const req = httpMocks.createRequest({
+      method: "POST",
+      body: { email: "manuel@sample.com", password: "Pa$$word20" },
+    });
+    saveRes = MockResponseWithCookies();
+    const jsonPromise = saveRes.jsonPromise();
+    login(req, saveRes);
+    await jsonPromise;
+    expect(saveRes.statusCode).toBe(200);
+  });
+  it("43. You can now logoff.", async () => {
+    const req = httpMocks.createRequest({
+      method: "POST",
+    });
+    saveRes = MockResponseWithCookies();
+    await logoff(req, saveRes);
+    expect(saveRes.statusCode).toBe(200);
+  });
+  it("45. The logoff clears the cookie.", () => {
+    const setCookieArray = saveRes.get("Set-Cookie");
+    jwtCookie = setCookieArray.find((str) => str.startsWith("jwt="));
+    expect(jwtCookie).toContain("Jan 1970");
+  });
 });

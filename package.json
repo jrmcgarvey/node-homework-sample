@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "commonjs",
   "scripts": {
-    "test": "node --experimental-vm-modules ./node_modules/.bin/jest --verbose --roots ./test"
+    "test": "jest --testPathPatterns=test/ --verbose --maxWorkers=1 --bail"
   },
   "author": "",
   "license": "ISC",

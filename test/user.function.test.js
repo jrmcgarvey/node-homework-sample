@@ -1,33 +1,62 @@
-require("dotenv").config({path: "../.env"});
-const request = require("supertest")
+require("dotenv").config();
+const request = require("supertest");
 process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
-const {app, server} = require("../app")
-const agent = request.agent(app)
 const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
+let agent;
+let saveRes;
+const { app, server } = require("../app");
 
 beforeAll(async () => {
-  // clear databaseS
+  // clear database
+  const prisma = new PrismaClient();
   await prisma.Task.deleteMany(); // delete all tasks
   await prisma.User.deleteMany(); // delete all users
+  agent = request.agent(app);
+});
+
+afterAll(async () => {
+  await new Promise((resolve, reject) => {
+    server.close((err) => {
+      if (err) reject(err);
+      else resolve();
+    });
+  });
+  console.log("got it closed");
 });
 
 describe("register a user ", () => {
-  it("it creates the user entry", async () => {
+  it("46. it creates the user entry", async () => {
     const newUser = {
       name: "John Deere",
       email: "jdeere@example.com",
       password: "Pa$$word20",
     };
-    const res = await agent.post("/user/register", newUser).send(newUser);
-    expect(res.status).toBe(201);
-    expect(res.body.name).toBe("John Deere");
-    expect(res.body.csrfToken).toBeDefined();
-    console.log(res.headers)
-    expect(res.headers["set-cookie"]).toBeDefined();
-    const cookie = res.headers["set-cookie"][0]
-    console.log(cookie)
-    expect(cookie.substring(0,4)).toBe("jwt=")
-    expect(cookie).toContain("HttpOnly;")
+    saveRes = await agent.post("/user/register").send(newUser);
+    expect(saveRes.status).toBe(201);
+  });
+  it("47. Registration returns an object with the expected name.", () => {
+    expect(saveRes.body.name).toBe("John Deere");
+  });
+  it("48. The returned object includes a csrfToken.", () => {
+    expect(saveRes.body.csrfToken).toBeDefined();
+  });
+  it("49. You can logon as the newly registered user.", async () => {
+    const logonObj = { email: "jdeere@example.com", password: "Pa$$word20" };
+    saveRes = await agent.post("/user/logon").send(logonObj);
+    expect(saveRes.status).toBe(200);
+  });
+  it("50. See if you are logged in", async () => {
+    const res = await agent.get("/tasks");
+    console.log("get tasks status", res.status);
+    expect(res.status).not.toBe(401);
+  });
+  it("51. You can logoff.", async () => {
+    const token = saveRes.body.csrfToken;
+    saveRes = await agent.post("/user/logoff").set("X-CSRF-TOKEN", token);
+    expect(saveRes.status).toBe(200);
+  });
+  it("52. Makes sure we are logged out", async () => {
+    const res = await agent.get("/tasks");
+    expect(res.status).toBe(401);
   });
 });

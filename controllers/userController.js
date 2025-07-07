@@ -29,7 +29,7 @@ const login = async (req, res) => {
       res.status(StatusCodes.UNAUTHORIZED).json({ message: "Login failed" });
     } else {
       setJwtCookie(req, res, user);
-      res.json({ name: user.name, csrfToken: req.user.csrfToken });
+      res.json({ name: user.name, csrfToken: req.user.csrfToken, additional: "does this show" });
     }
   })(req, res);
 };
