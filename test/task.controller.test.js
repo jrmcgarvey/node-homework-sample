@@ -63,7 +63,6 @@ describe("testing task creation", () => {
     }
   });
   it("16. If you have a valid user id, create() succeeds (res.statusCode should be 201).", async () => {
-    expect.assertions(1);
     const req = httpMocks.createRequest({
       method: "POST",
       body: { title: "first task" },

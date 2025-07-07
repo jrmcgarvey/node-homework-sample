@@ -21,7 +21,6 @@ afterAll(async () => {
       else resolve();
     });
   });
-  console.log("got it closed");
 });
 
 describe("register a user ", () => {
@@ -47,7 +46,6 @@ describe("register a user ", () => {
   });
   it("50. See if you are logged in", async () => {
     const res = await agent.get("/tasks");
-    console.log("get tasks status", res.status);
     expect(res.status).not.toBe(401);
   });
   it("51. You can logoff.", async () => {

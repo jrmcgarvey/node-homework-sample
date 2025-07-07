@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "commonjs",
   "scripts": {
-    "test": "jest --testPathPatterns=test/ --verbose --maxWorkers=1 --bail"
+    "test": "NODE_ENV=test jest --testPathPatterns=test/ --verbose --maxWorkers=1"
   },
   "author": "",
   "license": "ISC",
