@@ -1,4 +1,4 @@
-const { PrismaClient } = require("@prisma/client");
+const prisma = require("../db/prisma");
 const crypto = require("crypto");
 const util = require("util");
 
@@ -18,8 +18,6 @@ async function comparePassword(inputPassword, storedHash) {
 
   return crypto.timingSafeEqual(keyBuffer, derivedKey);
 }
-
-const prisma = new PrismaClient();
 
 async function createUser(data) {
   const hashed = await hashPassword(data.password);

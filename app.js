@@ -1,6 +1,7 @@
 require("dotenv").config();
 if (process.env.NODE_ENV === "test")
   process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
+const prisma = require("./db/prisma")
 const express = require("express");
 const cookieParser = require("cookie-parser");
 const helmet = require("helmet");
@@ -67,5 +68,42 @@ try {
 } catch (error) {
   console.log(error);
 }
+let isShuttingDown = false;
+
+async function shutdown() {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+
+  console.log('Shutting down gracefully...');
+
+  // Stop accepting new requests
+  server.close(async (err) => {
+    if (err) {
+      console.error('Error closing server:', err);
+    } else {
+      console.log('Server closed');
+    }
+
+    try {
+      await prisma.$disconnect();
+      console.log('Prisma disconnected');
+    } catch (err) {
+      console.error('Error disconnecting Prisma:', err);
+    }
+
+    process.exit(0);
+  });
+}
+
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught exception:', err);
+  shutdown();
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled rejection:', reason);
+  shutdown();
+});
 
 module.exports = { app, server };
