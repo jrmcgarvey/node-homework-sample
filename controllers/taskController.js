@@ -1,8 +1,7 @@
-const { PrismaClient } = require("@prisma/client");
 const { taskSchema, patchTaskSchema } = require("../validation/taskSchema.js");
 const { StatusCodes } = require("http-status-codes");
 
-const prisma = new PrismaClient();
+const prisma = require("../db/prisma")
 
 const index = async (req, res) => {
   const allTasks = await prisma.Task.findMany({
