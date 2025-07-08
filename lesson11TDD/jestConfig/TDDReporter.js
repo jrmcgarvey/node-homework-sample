@@ -105,39 +105,51 @@ class Reporter {
         });
       }
     }
-    requiredCorrect.sort();
-    requiredNotImplemented.sort();
+    requiredCorrect.sort((a, b) => a - b);
+    requiredNotImplemented.sort((a, b) => a - b);
     requiredErrorList.sort((a, b) => a.testNumber - b.testNumber);
-    optionalCorrect.sort();
-    optionalNotImplemented.sort();
+    optionalCorrect.sort((a, b) => a - b);
+    optionalNotImplemented.sort((a, b) => a - b);
     optionalErrorList.sort((a, b) => a.testNumber - b.testNumber);
     console.log("Required part of the Assignment:");
     console.log("The following tests gave correct results: ", requiredCorrect);
-    console.log(
-      "The following tests were not implemented: ",
-      requiredNotImplemented,
-    );
+    if (requiredNotImplemented.length > 0) {
+      console.log(
+        "The following tests were not implemented: ",
+        requiredNotImplemented,
+      );
+    } else {
+      console.log("All tests were implemented.");
+    }
     if (requiredErrorList.length > 0) {
-      console.log("The following tests did not report the expected result:");
+      console.log("The following tests did not report the expected results:");
       for (const row of requiredErrorList) {
         console.log(
           `⚠️   ${row.title} should have returned ${row.expected} but instead returned ${row.returned}.`,
         );
       }
+    } else {
+      console.log("All implemented tests gave the expected results.");
     }
     console.log("Optional part of the Assignment:");
     console.log("The following tests gave correct results: ", optionalCorrect);
-    console.log(
-      "The following tests were not implemented: ",
-      optionalNotImplemented,
-    );
+    if (optionalNotImplemented.length > 0) {
+      console.log(
+        "The following tests were not implemented: ",
+        optionalNotImplemented,
+      );
+    } else {
+      console.log("All tests were implemented.");
+    }
     if (optionalErrorList.length > 0) {
-      console.log("The following tests did not report the expected result:");
+      console.log("The following tests did not report the expected results:");
       for (const row of optionalErrorList) {
         console.log(
           `⚠️   ${row.title} should have returned ${row.expected} but instead returned ${row.returned}.`,
         );
       }
+    } else {
+      console.log("All implemented tests gave the expected results.");
     }
   }
 }
