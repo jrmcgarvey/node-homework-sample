@@ -35,11 +35,11 @@ const login = async (req, res) => {
 };
 
 const register = async (req, res) => {
-  const { err, value } = userSchema.validate(req.body, { abortEarly: false });
-  if (err) {
+  const { error, value } = userSchema.validate(req.body, { abortEarly: false });
+  if (error) {
     return res
       .status(StatusCodes.BAD_REQUEST)
-      .res.json({ message: err.message });
+      .json({ message: error.message });
   }
   let user = null;
   try {
