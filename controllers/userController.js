@@ -11,7 +11,7 @@ const setJwtCookie = (req, res, user) => {
   const payload = { id: user.id, csrfToken: randomUUID() };
   req.user = payload;
   const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" });
-  const sameSite = process.env.NODE_ENV === "production" ? "None" : "Strict";
+  const sameSite = process.env.NODE_ENV === "production" ? "None" : "Lax";
 
   // Set cookie
   res.cookie("jwt", token, {
