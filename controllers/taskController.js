@@ -10,7 +10,6 @@ const index = async (req, res) => {
     },
     omit: { userId: true },
   }
-  console.log(req.query)
   if (req.query["sortBy"]) {
     let direction = "asc";
     if (req.query["sortDirection"] == "desc") {
