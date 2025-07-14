@@ -8,7 +8,7 @@ const { createUser } = require("../services/userService");
 
 const setJwtCookie = (req, res, user) => {
   // Sign JWT
-  const payload = { id: user.id, csrfToken: randomUUID() };
+  const payload = { id: user.id, name: user.name, csrfToken: randomUUID() };
   req.user = payload;
   const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" });
   const sameSite = process.env.NODE_ENV === "production" ? "None" : "Lax";
@@ -64,4 +64,9 @@ const logoff = async (req, res) => {
   res.json({});
 };
 
-module.exports = { login, register, logoff };
+const getNameAndCSRFToken = (req, res) => {
+  res.json({name: req.user.name, csrfToken: req.user.csrfToken})
+}
+
+
+module.exports = { login, register, logoff, getNameAndCSRFToken };
