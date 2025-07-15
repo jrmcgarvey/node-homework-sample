@@ -1,6 +1,7 @@
 const { StatusCodes } = require("http-status-codes");
 
 module.exports = (req, res, next) => {
+  res.type('json')
   if (!["POST","PATCH"].includes(req.method))
     return next();
   if (!req.body)

@@ -4,12 +4,25 @@ const { StatusCodes } = require("http-status-codes");
 const prisma = require("../db/prisma")
 
 const index = async (req, res) => {
-  const allTasks = await prisma.Task.findMany({
+  const options = {
     where: {
       userId: req.user.id,
     },
     omit: { userId: true },
-  });
+  }
+  if (req.query["sortBy"]) {
+    let direction = "asc";
+    if (req.query["sortDirection"] == "desc") {
+      direction = "desc";
+    }
+    const tempObj = {}
+    tempObj[req.query["sortBy"]] = direction;
+    options["orderBy"]=tempObj;
+  }
+  if (req.query["find"]) {
+    options.where["title"] = { contains: req.query["find"]}
+  }
+  const allTasks = await prisma.Task.findMany(options);
   if (allTasks.length == 0) {
     res.status(StatusCodes.NOT_FOUND).json({ message: "No tasks were found." });
   } else {

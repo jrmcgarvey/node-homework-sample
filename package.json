@@ -6,7 +6,9 @@
   "type": "commonjs",
   "scripts": {
     "test": "npx cross-env NODE_ENV=test jest --testPathPatterns=test/ --verbose --maxWorkers=1",
-    "lesson11TDD": "npx cross-env NODE_ENV=test node ./lesson11TDD/jestConfig/run-lesson11-tdd.js"
+    "lesson11TDD": "npx cross-env NODE_ENV=test node ./lesson11TDD/jestConfig/run-lesson11-tdd.js",
+    "dev": "nodemon app.js",
+    "start": "node app"
   },
   "author": "",
   "license": "ISC",
