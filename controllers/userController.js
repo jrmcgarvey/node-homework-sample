@@ -22,9 +22,9 @@ const setJwtCookie = (req, res, user) => {
   });
 };
 
-const login = async (req, res) => {
+const login = async (req, res, next) => {
   passport.authenticate("local", { session: false }, (err, user) => {
-    if (err) throw err;
+    if (err) return next(err);
     if (!user) {
       res.status(StatusCodes.UNAUTHORIZED).json({ message: "Login failed" });
     } else {
@@ -50,7 +50,7 @@ const register = async (req, res) => {
         .status(StatusCodes.BAD_REQUEST)
         .json({ message: "A user record already exists with that email." });
     } else {
-      throw e;
+      next(e);
     }
   }
   setJwtCookie(req, res, user);

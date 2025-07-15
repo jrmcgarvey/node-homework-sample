@@ -52,11 +52,12 @@ app.use(
 require("./passport/passport");
 const contentChecker = require("./middleware/content-checker");
 app.use(contentChecker);
+const wrapRoutes = require("./util/rejectionHandler")
 const userRouter = require("./routes/user");
-app.use("/user", userRouter);
+app.use("/user", wrapRoutes(userRouter));
 const taskRouter = require("./routes/task");
 
-app.use("/tasks", authRequired, taskRouter);
+app.use("/tasks", authRequired, wrapRoutes(taskRouter));
 
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
@@ -76,25 +77,24 @@ async function shutdown() {
   isShuttingDown = true;
 
   console.log('Shutting down gracefully...');
-
+  server.close();
   // Stop accepting new requests
-  server.close(async (err) => {
-    if (err) {
-      console.error('Error closing server:', err);
-    } else {
-      console.log('Server closed');
-    }
-
+  // server.close((err) => {
+  //   if (err) {
+  //     console.error('Error closing server:', err);
+  //   } else {
+  //     console.log('Server closed');
+  //   }
+  // }
     try {
+      console.log("disconnecting prisma")
       await prisma.$disconnect();
       console.log('Prisma disconnected');
     } catch (err) {
       console.error('Error disconnecting Prisma:', err);
     }
-
-    process.exit(0);
-  });
-}
+    process.exit(0); 
+};
 
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
