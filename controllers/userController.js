@@ -15,6 +15,7 @@ const setJwtCookie = (req, res, user) => {
 
   // Set cookie
   res.cookie("jwt", token, {
+    domain: getRootDomain(req.hostname),
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite,
