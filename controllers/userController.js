@@ -8,13 +8,14 @@ const { createUser } = require("../services/userService");
 
 const setJwtCookie = (req, res, user) => {
   // Sign JWT
-  const payload = { id: user.id, csrfToken: randomUUID() };
+  const payload = { id: user.id, name: user.name, csrfToken: randomUUID() };
   req.user = payload;
   const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" });
   const sameSite = process.env.NODE_ENV === "production" ? "None" : "Lax";
 
   // Set cookie
   res.cookie("jwt", token, {
+    ...((process.env.NODE_ENV === "production") && { domain: req.hostname }), // add domain into cookie for production only
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite,
@@ -22,9 +23,9 @@ const setJwtCookie = (req, res, user) => {
   });
 };
 
-const login = async (req, res) => {
+const login = async (req, res, next) => {
   passport.authenticate("local", { session: false }, (err, user) => {
-    if (err) throw err;
+    if (err) return next(err);
     if (!user) {
       res.status(StatusCodes.UNAUTHORIZED).json({ message: "Login failed" });
     } else {
@@ -50,7 +51,7 @@ const register = async (req, res) => {
         .status(StatusCodes.BAD_REQUEST)
         .json({ message: "A user record already exists with that email." });
     } else {
-      throw e;
+      next(e);
     }
   }
   setJwtCookie(req, res, user);
@@ -64,4 +65,9 @@ const logoff = async (req, res) => {
   res.json({});
 };
 
-module.exports = { login, register, logoff };
+const getNameAndCSRFToken = (req, res) => {
+  res.json({name: req.user.name, csrfToken: req.user.csrfToken})
+}
+
+
+module.exports = { login, register, logoff, getNameAndCSRFToken };

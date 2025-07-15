@@ -5,7 +5,9 @@
   "main": "index.js",
   "type": "commonjs",
   "scripts": {
-    "test": "npx cross-env NODE_ENV=test jest --testPathPatterns=test/ --verbose --maxWorkers=1"
+    "test": "npx cross-env NODE_ENV=test jest --testPathPatterns=test/ --verbose --maxWorkers=1",
+    "dev": "nodemon app.js",
+    "start": "node app"
   },
   "author": "",
   "license": "ISC",
