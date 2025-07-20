@@ -13,11 +13,7 @@ const app = express();
 // error handler
 const notFoundMiddleware = require("./middleware/not-found");
 const errorHandlerMiddleware = require("./middleware/error-handler");
-const authRequired = require("./middleware/auth");
 app.use(cookieParser(process.env.JWT_SECRET)); // we don't really need signed cookies
-// if (process.env.NODE_ENV === "production") {
-//   app.set("trust proxy", 1);
-// }
 app.set("trust proxy", 1);
 app.use(express.json({ limit: "1kb" }));
 app.use(xss());
@@ -49,15 +45,11 @@ app.use(
   }),
 );
 
-require("./passport/passport");
-const contentChecker = require("./middleware/content-checker");
-app.use(contentChecker);
-const wrapRoutes = require("./util/rejectionHandler")
+const { jwtMiddleware } = require("./passport/passport");
 const userRouter = require("./routes/user");
-app.use("/user", wrapRoutes(userRouter));
+app.use("/user", userRouter);
 const taskRouter = require("./routes/task");
-
-app.use("/tasks", authRequired, wrapRoutes(taskRouter));
+app.use("/tasks", jwtMiddleware, taskRouter);
 
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
@@ -70,22 +62,13 @@ try {
 } catch (error) {
   console.log(error);
 }
-let isShuttingDown = false;
 
+let isShuttingDown = false;
 async function shutdown() {
   if (isShuttingDown) return;
   isShuttingDown = true;
-
   console.log('Shutting down gracefully...');
   server.close();
-  // Stop accepting new requests
-  // server.close((err) => {
-  //   if (err) {
-  //     console.error('Error closing server:', err);
-  //   } else {
-  //     console.log('Server closed');
-  //   }
-  // }
     try {
       console.log("disconnecting prisma")
       await prisma.$disconnect();

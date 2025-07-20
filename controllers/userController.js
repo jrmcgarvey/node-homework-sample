@@ -1,27 +1,7 @@
-const passport = require("passport");
 const { userSchema } = require("../validation/userSchema");
-const jwt = require("jsonwebtoken");
 const { StatusCodes } = require("http-status-codes");
-const { randomUUID } = require("crypto");
-
 const { createUser } = require("../services/userService");
-
-const setJwtCookie = (req, res, user) => {
-  // Sign JWT
-  const payload = { id: user.id, name: user.name, csrfToken: randomUUID() };
-  req.user = payload;
-  const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" });
-  const sameSite = process.env.NODE_ENV === "production" ? "None" : "Lax";
-
-  // Set cookie
-  res.cookie("jwt", token, {
-    ...((process.env.NODE_ENV === "production") && { domain: req.hostname }), // add domain into cookie for production only
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite,
-    maxAge: 3600000,
-  });
-};
+const { setJwtCookie } = require("../passport/passport");
 
 const login = async (req, res, next) => {
   passport.authenticate("local", { session: false }, (err, user) => {
@@ -62,12 +42,7 @@ const register = async (req, res) => {
 
 const logoff = async (req, res) => {
   res.clearCookie("jwt");
-  res.json({});
+  res.sendStatus( StatusCodes.OK );
 };
 
-const getNameAndCSRFToken = (req, res) => {
-  res.json({name: req.user.name, csrfToken: req.user.csrfToken})
-}
-
-
-module.exports = { login, register, logoff, getNameAndCSRFToken };
+module.exports = { login, register, logoff };
