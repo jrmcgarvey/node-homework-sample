@@ -1,6 +1,25 @@
 const LocalStrategy = require("passport-local").Strategy;
 const passport = require("passport");
 const { verifyUserPassword } = require("../services/userService");
+const { StatusCodes } = require("http-status-codes");
+const { randomUUID } = require("crypto");
+const jwt = require("jsonwebtoken");
+
+const setJwtCookie = (req, res, user) => {
+  // Sign JWT
+  const payload = { id: user.id, name: user.name, csrfToken: randomUUID() }; // put a csrfToken in
+  req.user = payload;
+  const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" }); // 1 hour expiration
+
+  // Set cookie
+  res.cookie("jwt", token, {
+    ...(process.env.NODE_ENV === "production" && { domain: req.hostname }), // add domain into cookie for production only
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
+    maxAge: 3600000, // 1 hour expiration.  Ends up as max-age 3600 in the cookie.
+  });
+};
 
 passport.use(
   new LocalStrategy(
@@ -18,22 +37,59 @@ passport.use(
           return done(null, null, { message: "Authentication failed." });
         return done(null, user); // this object goes to req.user.
       } catch (err) {
-        return done(err);
+        done(err);
       }
     },
   ),
 );
+
+const logonRouteHandler = async (req, res, next) => {
+  const user = await new Promise((resolve) => {
+    passport.authenticate("local", { session: false }, (err, user) => {
+      return err ? next(err) : resolve(user);
+    })(req, res);
+  });
+  if (!user) {
+    res
+      .status(StatusCodes.UNAUTHORIZED)
+      .json({ message: "Authentication failed" });
+  } else {
+    setJwtCookie(req, res, user);
+    res.json({ name: user.name, csrfToken: req.user.csrfToken });
+  }
+};
+
 const { Strategy: JwtStrategy } = require("passport-jwt");
-
-const cookieExtractor = (req) => req?.cookies?.jwt || null;
-
+const cookieExtractor = (req) => {
+  return req?.cookies?.jwt || null;
+};
 const jwtOptions = {
   jwtFromRequest: cookieExtractor,
   secretOrKey: process.env.JWT_SECRET,
 };
-
 passport.use(
   new JwtStrategy(jwtOptions, (jwtPayload, done) => {
     return done(null, jwtPayload);
   }),
 );
+
+const jwtMiddleware = async (req, res, next) => {
+  const user = await new Promise((resolve, reject) => {
+    passport.authenticate("jwt", { session: false }, (err, user) => {
+      return err ? reject(err) : resolve(user);
+    })(req, res);
+  });
+  if (user) {
+    let loggedOn = true;
+    req.user = user;
+    if (["POST", "PATCH", "PUT", "DELETE", "CONNECT"].includes(req.method)) {
+      if (req.get("X-CSRF-TOKEN") != req.user.csrfToken) {
+        loggedOn = false;
+      }
+    }
+    if (loggedOn) return next();
+  }
+  res.status(StatusCodes.UNAUTHORIZED).json({ message: "Unauthorized" });
+};
+
+module.exports = { logonRouteHandler, jwtMiddleware, setJwtCookie };
