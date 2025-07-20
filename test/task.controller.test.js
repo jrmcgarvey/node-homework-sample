@@ -1,5 +1,6 @@
 require("dotenv").config();
 const { PrismaClient } = require("@prisma/client");
+const EventEmitter = require('events').EventEmitter;
 const { createUser } = require("../services/userService");
 const httpMocks = require("node-mocks-http");
 const {
@@ -9,6 +10,7 @@ const {
   update,
   deleteTask,
 } = require("../controllers/taskController");
+const waitForRouteHandlerCompletion = require("./waitForRouteHandlerCompletion");
 
 // a few useful globals
 let user1 = null;
@@ -41,9 +43,9 @@ describe("testing task creation", () => {
       method: "POST",
       body: { title: "first task" },
     });
-    saveRes = httpMocks.createResponse();
+    saveRes = httpMocks.createResponse({eventEmitter: EventEmitter});
     try {
-      await create(req, saveRes);
+      await waitForRouteHandlerCompletion(create,req,saveRes);
     } catch (e) {
       expect(e.name).toBe("TypeError");
     }
@@ -55,9 +57,9 @@ describe("testing task creation", () => {
       body: { title: "first task" },
     });
     req.user = { id: 72348 };
-    saveRes = httpMocks.createResponse();
+    saveRes = httpMocks.createResponse({eventEmitter: EventEmitter});
     try {
-      await create(req, saveRes);
+      await waitForRouteHandlerCompletion(create,req,saveRes);
     } catch (e) {
       expect(e.name).toBe("PrismaClientKnownRequestError")
     }
@@ -68,8 +70,8 @@ describe("testing task creation", () => {
       body: { title: "first task" },
     });
     req.user = { id: user1.id };
-    saveRes = httpMocks.createResponse();
-    await create(req, saveRes);
+    saveRes = httpMocks.createResponse({eventEmitter: EventEmitter});
+    await waitForRouteHandlerCompletion(create,req,saveRes);
     expect(saveRes.statusCode).toBe(201);
   });
   it("17. The object returned from the create() call has the expected title.", () => {
@@ -91,9 +93,9 @@ describe("getting created tasks", () => {
     const req = httpMocks.createRequest({
       method: "GET",
     });
-    saveRes = httpMocks.createResponse();
+    saveRes = httpMocks.createResponse({eventEmitter: EventEmitter});
     try {
-      await index(req, saveRes);
+      await waitForRouteHandlerCompletion(index,req,saveRes);
     } catch (e) {
       expect(e.name).toBe("TypeError");
     }
@@ -103,8 +105,8 @@ describe("getting created tasks", () => {
       method: "GET",
     });
     req.user = { id: user1.id };
-    saveRes = httpMocks.createResponse();
-    await index(req, saveRes);
+    saveRes = httpMocks.createResponse({eventEmitter: EventEmitter});
+    await waitForRouteHandlerCompletion(index,req,saveRes);
     expect(saveRes.statusCode).toBe(200);
   });
   it("22. The returned JSON array has length 1.", () => {
@@ -122,7 +124,7 @@ describe("getting created tasks", () => {
       method: "GET",
     });
     req.user = { id: user2.id };
-    saveRes = httpMocks.createResponse();
+    saveRes = httpMocks.createResponse({eventEmitter: EventEmitter});
     await index(req, saveRes);
     expect(saveRes.statusCode).toBe(404);
   });
@@ -132,8 +134,8 @@ describe("getting created tasks", () => {
     });
     req.user = { id: user1.id };
     req.params = { id: saveTaskId };
-    saveRes = httpMocks.createResponse();
-    await show(req, saveRes);
+    saveRes = httpMocks.createResponse({eventEmitter: EventEmitter});
+    await waitForRouteHandlerCompletion(show,req,saveRes);
     expect(saveRes.statusCode).toBe(200);
   });
   it("27. User2 can't retrieve this object.", async () => {
@@ -142,8 +144,8 @@ describe("getting created tasks", () => {
     });
     req.user = { id: user2.id };
     req.params = { id: saveTaskId };
-    saveRes = httpMocks.createResponse();
-    await show(req, saveRes);
+    saveRes = httpMocks.createResponse({eventEmitter: EventEmitter});
+    await waitForRouteHandlerCompletion(show,req,saveRes);
     expect(saveRes.statusCode).toBe(404);
   });
 });
@@ -156,8 +158,8 @@ describe("testing the update and delete of tasks.", () => {
     req.user = { id: user1.id };
     req.params = { id: saveTaskId };
     req.body = { isCompleted: true };
-    saveRes = httpMocks.createResponse();
-    await update(req, saveRes);
+    saveRes = httpMocks.createResponse({eventEmitter: EventEmitter});
+    await waitForRouteHandlerCompletion(update,req,saveRes);
     expect(saveRes.statusCode).toBe(200);
   });
   it("29. User2 can't do this.", async () => {
@@ -167,8 +169,8 @@ describe("testing the update and delete of tasks.", () => {
     req.user = { id: user2.id };
     req.params = { id: saveTaskId };
     req.body = { isCompleted: true };
-    saveRes = httpMocks.createResponse();
-    await update(req, saveRes);
+    saveRes = httpMocks.createResponse({eventEmitter: EventEmitter});
+    await waitForRouteHandlerCompletion(update,req,saveRes);
     expect(saveRes.statusCode).not.toBe(200);
   });
   it("30. User2 can't delete this task.", async () => {
@@ -177,8 +179,8 @@ describe("testing the update and delete of tasks.", () => {
     });
     req.user = { id: user2.id };
     req.params = { id: saveTaskId };
-    saveRes = httpMocks.createResponse();
-    await deleteTask(req, saveRes);
+    saveRes = httpMocks.createResponse({eventEmitter: EventEmitter});
+    await waitForRouteHandlerCompletion(deleteTask,req,saveRes);
     expect(saveRes.statusCode).not.toBe(200);
   });
   it("31. User1 can delete this task.", async () => {
@@ -187,8 +189,8 @@ describe("testing the update and delete of tasks.", () => {
     });
     req.user = { id: user1.id };
     req.params = { id: saveTaskId };
-    saveRes = httpMocks.createResponse();
-    await deleteTask(req, saveRes);
+    saveRes = httpMocks.createResponse({eventEmitter: EventEmitter});
+    await waitForRouteHandlerCompletion(deleteTask,req,saveRes);
     expect(saveRes.statusCode).toBe(200);
   });
   it("32. Retrieving user1's tasks now returns a 404.", async () => {
@@ -196,8 +198,8 @@ describe("testing the update and delete of tasks.", () => {
       method: "GET",
     });
     req.user = { id: user1.id };
-    saveRes = httpMocks.createResponse();
-    await index(req, saveRes);
+    saveRes = httpMocks.createResponse({eventEmitter: EventEmitter});
+    await waitForRouteHandlerCompletion(index,req,saveRes);
     expect(saveRes.statusCode).toBe(404);
   });
 });
