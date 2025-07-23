@@ -24,6 +24,7 @@ beforeAll(async () => {
   const prisma = new PrismaClient();
   await prisma.Task.deleteMany(); // delete all tasks
   await prisma.User.deleteMany(); // delete all users
+  prisma.$disconnect()
   user1 = await createUser({
     email: "bob@sample.com",
     password: "Pa$$word20",

@@ -40,6 +40,7 @@ beforeAll(async () => {
     password: "Pa$$word20",
     name: "Bob",
   });
+  prisma.$disconnect();
 });
 let jwtCookie;
 
