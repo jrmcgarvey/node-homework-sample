@@ -53,6 +53,11 @@ class Reporter {
       "42.": { expected: "passed", observed: "not implemented" },
       "43.": { expected: "passed", observed: "not implemented" },
       "45.": { expected: "failed", observed: "not implemented" },
+      "61.": { expected: "passed", observed: "not implemented" },
+      "62.": { expected: "passed", observed: "not implemented" },
+      "63.": { expected: "passed", observed: "not implemented" },
+      "64.": { expected: "passed", observed: "not implemented" },
+      "65.": { expected: "passed", observed: "not implemented" },
     };
   }
   onTestResult(_, result) {
