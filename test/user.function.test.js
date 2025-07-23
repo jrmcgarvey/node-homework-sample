@@ -11,6 +11,7 @@ beforeAll(async () => {
   const prisma = new PrismaClient();
   await prisma.Task.deleteMany(); // delete all tasks
   await prisma.User.deleteMany(); // delete all users
+  prisma.$disconnect();
   agent = request.agent(app);
 });
 

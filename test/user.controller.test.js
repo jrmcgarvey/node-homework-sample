@@ -2,8 +2,12 @@ require("dotenv").config();
 const { PrismaClient } = require("@prisma/client");
 const { createUser } = require("../services/userService");
 const httpMocks = require("node-mocks-http");
-const { login, register, logoff } = require("../controllers/userController");
-require("../passport/passport");
+const EventEmitter = require('events').EventEmitter;
+const { register, logoff } = require("../controllers/userController");
+const { logonRouteHandler, jwtMiddleware } = require("../passport/passport");
+const waitForRouteHandlerCompletion = require("./waitForRouteHandlerCompletion.js")
+const jwt = require("jsonwebtoken");
+let saveReq;
 
 // a few useful globals
 let saveRes = null;
@@ -11,7 +15,9 @@ let saveData = null;
 
 const cookie = require("cookie");
 function MockResponseWithCookies() {
-  const res = httpMocks.createResponse();
+  const res = httpMocks.createResponse({
+  eventEmitter: EventEmitter,
+});
   res.cookie = (name, value, options = {}) => {
     const serialized = cookie.serialize(name, String(value), options);
     let currentHeader = res.getHeader("Set-Cookie");
@@ -21,18 +27,6 @@ function MockResponseWithCookies() {
     currentHeader.push(serialized);
     res.setHeader("Set-Cookie", currentHeader);
   };
-
-  res.jsonPromise = () => {
-    return new Promise((resolve) => {
-      res.oldJsonMethod = res.json;
-      res.json = (...args) => {
-        res.oldJsonMethod(...args);
-        res.json = res.oldJsonMethod;
-        resolve();
-      };
-    });
-  };
-
   return res;
 }
 
@@ -46,6 +40,7 @@ beforeAll(async () => {
     password: "Pa$$word20",
     name: "Bob",
   });
+  prisma.$disconnect();
 });
 let jwtCookie;
 
@@ -56,9 +51,7 @@ describe("testing login, register, and logoff", () => {
       body: { email: "bob@sample.com", password: "Pa$$word20" },
     });
     saveRes = MockResponseWithCookies();
-    const jsonPromise = saveRes.jsonPromise();
-    login(req, saveRes); // no need for await here
-    await jsonPromise; // because we do it here, to return after the res.json().
+    await waitForRouteHandlerCompletion(logonRouteHandler,req,saveRes);
     expect(saveRes.statusCode).toBe(200); // success!
   });
   it("35. A string in the Set-Cookie array starts with jwt=.", () => {
@@ -82,9 +75,7 @@ describe("testing login, register, and logoff", () => {
       body: { email: "bob@sample.com", password: "bad password" },
     });
     saveRes = MockResponseWithCookies();
-    const jsonPromise = saveRes.jsonPromise();
-    login(req, saveRes);
-    await jsonPromise;
+    await waitForRouteHandlerCompletion(logonRouteHandler,req,saveRes);
     expect(saveRes.statusCode).toBe(401);
   });
   it("40. You can't register with an email address that is already registered.", async () => {
@@ -97,7 +88,7 @@ describe("testing login, register, and logoff", () => {
       },
     });
     saveRes = MockResponseWithCookies();
-    await register(req, saveRes);
+    await waitForRouteHandlerCompletion(register, req, saveRes);
     expect(saveRes.statusCode).toBe(400);
   });
   it("41. You can register an additional user.", async () => {
@@ -110,7 +101,7 @@ describe("testing login, register, and logoff", () => {
       },
     });
     saveRes = MockResponseWithCookies();
-    await register(req, saveRes);
+    await waitForRouteHandlerCompletion(register, req, saveRes);
     expect(saveRes.statusCode).toBe(201);
   });
   it("42. You can logon as that new user.", async () => {
@@ -119,9 +110,7 @@ describe("testing login, register, and logoff", () => {
       body: { email: "manuel@sample.com", password: "Pa$$word20" },
     });
     saveRes = MockResponseWithCookies();
-    const jsonPromise = saveRes.jsonPromise();
-    login(req, saveRes);
-    await jsonPromise;
+    await waitForRouteHandlerCompletion(logonRouteHandler,req,saveRes);
     expect(saveRes.statusCode).toBe(200);
   });
   it("43. You can now logoff.", async () => {
@@ -129,7 +118,7 @@ describe("testing login, register, and logoff", () => {
       method: "POST",
     });
     saveRes = MockResponseWithCookies();
-    await logoff(req, saveRes);
+    await waitForRouteHandlerCompletion(logoff, req, saveRes);
     expect(saveRes.statusCode).toBe(200);
   });
   it("45. The logoff clears the cookie.", () => {
@@ -138,3 +127,56 @@ describe("testing login, register, and logoff", () => {
     expect(jwtCookie).toContain("Jan 1970");
   });
 });
+
+describe("Testing JWT middleware", () =>{
+  it("61. Returns a 401 if the JWT is not present", async() =>{
+    const req = httpMocks.createRequest({
+      method: "POST"
+    })
+    saveRes = MockResponseWithCookies();
+    await waitForRouteHandlerCompletion(jwtMiddleware,req,saveRes);
+    expect(saveRes.statusCode).toBe(401);
+  })
+  it("62. Returns a 401 if the JWT is invalid", async ()=>{
+    const req = httpMocks.createRequest({
+      method: "POST"
+    })
+    saveRes = MockResponseWithCookies();
+    const jwtCookie = jwt.sign({id: 5, csrfToken: "badToken"}, "badSecret", { expiresIn: "1h" });
+    req.cookies = {jwt: jwtCookie }
+    await waitForRouteHandlerCompletion(jwtMiddleware,req,saveRes);
+    expect(saveRes.statusCode).toBe(401);
+  })
+  it("63. Returns a 401 if the JWT is valid but the token isn't", async ()=>{
+    const req = httpMocks.createRequest({
+      method: "POST"
+    })
+    saveRes = MockResponseWithCookies();
+    const jwtCookie = jwt.sign({id: 5, csrfToken: "badtoken"}, process.env.JWT_SECRET, { expiresIn: "1h" });
+    req.cookies = {jwt: jwtCookie }
+    if (!req.headers) {
+      req.headers={};
+    }
+    req.headers["X-CSRF-TOKEN"]= "goodtoken"
+    await waitForRouteHandlerCompletion(jwtMiddleware,req,saveRes);
+    expect(saveRes.statusCode).toBe(401);
+  })
+  it("64. Calls next() if both the token and the jwt are good.", async ()=>{
+    const req = httpMocks.createRequest({
+      method: "POST"
+    })
+    saveRes = MockResponseWithCookies();
+    const jwtCookie = jwt.sign({id: 5, csrfToken: "goodtoken"}, process.env.JWT_SECRET, { expiresIn: "1h" });
+    req.cookies = {jwt: jwtCookie }
+    if (!req.headers) {
+      req.headers={};
+    }
+    req.headers["X-CSRF-TOKEN"]= "goodtoken"
+    const next = await waitForRouteHandlerCompletion(jwtMiddleware,req,saveRes);
+    saveReq=req;
+    expect(next).toHaveBeenCalled();
+  })
+  it("65. Sets the req.user before calling next()", () =>{
+    expect(saveReq.user.id).toBe(5);
+  })
+})
