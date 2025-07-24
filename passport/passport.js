@@ -44,19 +44,20 @@ passport.use(
 );
 
 const logonRouteHandler = async (req, res, next) => {
-  const user = await new Promise((resolve) => {
-    passport.authenticate("local", { session: false }, (err, user) => {
-      return err ? next(err) : resolve(user);
-    })(req, res);
-  });
-  if (!user) {
-    res
-      .status(StatusCodes.UNAUTHORIZED)
-      .json({ message: "Authentication failed" });
-  } else {
-    setJwtCookie(req, res, user);
-    res.json({ name: user.name, csrfToken: req.user.csrfToken });
-  }
+  passport.authenticate("local", { session: false }, (err, user) => {
+    if (err) {
+      return next(err);
+    } else {
+      if (!user) {
+        res
+          .status(StatusCodes.UNAUTHORIZED)
+          .json({ message: "Authentication failed" });
+      } else {
+        setJwtCookie(req, res, user);
+        res.json({ name: user.name, csrfToken: req.user.csrfToken });
+      }
+    }
+  })(req, res);
 };
 
 const { Strategy: JwtStrategy } = require("passport-jwt");
@@ -74,22 +75,24 @@ passport.use(
 );
 
 const jwtMiddleware = async (req, res, next) => {
-  const user = await new Promise((resolve, reject) => {
-    passport.authenticate("jwt", { session: false }, (err, user) => {
-      return err ? reject(err) : resolve(user);
-    })(req, res);
-  });
-  if (user) {
-    let loggedOn = true;
-    req.user = user;
-    if (["POST", "PATCH", "PUT", "DELETE", "CONNECT"].includes(req.method)) {
-      if (req.get("X-CSRF-TOKEN") != req.user.csrfToken) {
-        loggedOn = false;
+  passport.authenticate("jwt", { session: false }, (err, user) => {
+    if (err) {
+      return next(err); // don't throw the error!
+    }
+    if (user) {
+      let loggedOn = true;
+      if (["POST", "PATCH", "PUT", "DELETE", "CONNECT"].includes(req.method)) {
+        if (req.get("X-CSRF-TOKEN") != user.csrfToken) {
+          loggedOn = false;
+        }
+      }
+      if (loggedOn) {
+        req.user = user;
+        return next();
       }
     }
-    if (loggedOn) return next();
-  }
-  res.status(StatusCodes.UNAUTHORIZED).json({ message: "Unauthorized" });
+    res.status(StatusCodes.UNAUTHORIZED).json({ message: "Unauthorized" });
+  })(req, res);
 };
 
 module.exports = { logonRouteHandler, jwtMiddleware, setJwtCookie };

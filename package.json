@@ -7,8 +7,7 @@
   "scripts": {
     "test": "npx cross-env NODE_ENV=test jest --testPathPatterns=test/ --verbose --maxWorkers=1",
     "dev": "nodemon app.js",
-    "start": "node app",
-    "startDebug": "nodemon --inspect-brk app"
+    "start": "node app"
   },
   "author": "",
   "license": "ISC",
