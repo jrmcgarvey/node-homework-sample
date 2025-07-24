@@ -7,8 +7,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon app.js",
-    "start": "node app",
-    "startDebug": "nodemon --inspect-brk app"
+    "start": "node app"
   },
   "author": "",
   "license": "ISC",
