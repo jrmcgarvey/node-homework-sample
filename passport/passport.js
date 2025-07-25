@@ -75,7 +75,7 @@ passport.use(
 );
 
 const jwtMiddleware = async (req, res, next) => {
-  passport.authenticate("jwt", { session: false }, (err, user) => {
+  passport.authenticate("jwt", { session: false, failWithError: false }, (err, user) => {
     if (err) {
       return next(err); // don't throw the error!
     }
