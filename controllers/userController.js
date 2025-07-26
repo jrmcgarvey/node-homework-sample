@@ -1,18 +1,16 @@
 const { userSchema } = require("../validation/userSchema");
 const { StatusCodes } = require("http-status-codes");
-const { createUser } = require("../services/userService");
+const { createUser, verifyUserPassword } = require("../services/userService");
 const { setJwtCookie } = require("../passport/passport");
+const { setLoggedOnUser } = require("../util/memoryStore")
 
-const login = async (req, res, next) => {
-  passport.authenticate("local", { session: false }, (err, user) => {
-    if (err) return next(err);
-    if (!user) {
-      res.status(StatusCodes.UNAUTHORIZED).json({ message: "Login failed" });
-    } else {
-      setJwtCookie(req, res, user);
-      res.json({ name: user.name, csrfToken: req.user.csrfToken });
-    }
-  })(req, res);
+const login = async (req, res) => {
+  const { user, isValid } = await verifyUserPassword(req.body.email, req.body.password);
+  if (isValid) {
+    setLoggedOnUser(user.id)
+    return res.json({name: user.name});
+  }
+  res.status(401).json({message: "Authentication failed."})
 };
 
 const register = async (req, res) => {
@@ -34,14 +32,17 @@ const register = async (req, res) => {
       next(e);
     }
   }
-  setJwtCookie(req, res, user);
-  return res
-    .status(StatusCodes.CREATED)
-    .json({ name: value.name, csrfToken: req.user.csrfToken });
+  // setJwtCookie(req, res, user);
+  // return res
+  //   .status(StatusCodes.CREATED)
+  //   .json({ name: value.name, csrfToken: req.user.csrfToken });
+  setLoggedOnUser(user.id);
+  res.status(StatusCodes.CREATED).json( {name: user.name } );
 };
 
 const logoff = async (req, res) => {
-  res.clearCookie("jwt");
+  // res.clearCookie("jwt");
+  setLoggedOnUser(null);
   res.sendStatus( StatusCodes.OK );
 };
 

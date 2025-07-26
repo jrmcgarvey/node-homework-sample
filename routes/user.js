@@ -1,11 +1,10 @@
 const express = require("express");
-const { jwtMiddleware, logonRouteHandler } = require("../passport/passport")
 
 const router = express.Router();
-const { register, logoff } = require("../controllers/userController");
+const { register, logoff, login } = require("../controllers/userController");
 
-router.route("/logon").post(logonRouteHandler);
-router.route("/logoff").post(jwtMiddleware, logoff);
+router.route("/logon").post(login);
+router.route("/logoff").post(logoff);
 router.route("/").post(register);
 
 module.exports = router;

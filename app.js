@@ -46,11 +46,11 @@ if (origins.length) {
   );
 }
 
-const { jwtMiddleware } = require("./passport/passport");
+const auth = require("./middleware/auth");
 const userRouter = require("./routes/user");
 app.use("/user", userRouter);
 const taskRouter = require("./routes/task");
-app.use("/tasks", jwtMiddleware, taskRouter);
+app.use("/tasks", auth, taskRouter);
 
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
