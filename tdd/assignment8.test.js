@@ -83,6 +83,14 @@ describe("testing login, register, and logoff", () => {
     await waitForRouteHandlerCompletion(logonRouteHandler, req, saveRes);
     expect(saveRes.statusCode).toBe(200); // success!
   });
+  it("A string in the Set-Cookie array starts with jwt=.", () => {
+    const setCookieArray = saveRes.get("Set-Cookie");
+    jwtCookie = setCookieArray.find((str) => str.startsWith("jwt="));
+    expect(jwtCookie).toBeDefined();
+  });
+  it("That string contains HttpOnly;.", () => {
+    expect(jwtCookie).toContain("HttpOnly");
+  });
   it("returns the expected name.", () => {
     saveData = saveRes._getJSONData();
     expect(saveData.name).toBe("Jim");
@@ -135,9 +143,14 @@ describe("testing login, register, and logoff", () => {
     const req = httpMocks.createRequest({
       method: "POST",
     });
-    saveRes = httpMocks.createResponse();
+    saveRes = MockResponseWithCookies();
     await logoff(req, saveRes);
     expect(saveRes.statusCode).toBe(200);
+  });
+  it("The logoff clears the cookie.", () => {
+    const setCookieArray = saveRes.get("Set-Cookie");
+    jwtCookie = setCookieArray.find((str) => str.startsWith("jwt="));
+    expect(jwtCookie).toContain("Jan 1970");
   });
 });
 
