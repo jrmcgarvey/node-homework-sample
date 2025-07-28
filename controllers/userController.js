@@ -16,11 +16,10 @@ const login = async (req, res, next) => {
 };
 
 const register = async (req, res) => {
+  if (!req.body) req.body = {};
   const { error, value } = userSchema.validate(req.body, { abortEarly: false });
   if (error) {
-    return res
-      .status(StatusCodes.BAD_REQUEST)
-      .json({ message: error.message });
+    return res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
   }
   let user = null;
   try {
@@ -31,7 +30,7 @@ const register = async (req, res) => {
         .status(StatusCodes.BAD_REQUEST)
         .json({ message: "A user record already exists with that email." });
     } else {
-      next(e);
+      throw e;
     }
   }
   setJwtCookie(req, res, user);
@@ -42,7 +41,7 @@ const register = async (req, res) => {
 
 const logoff = async (req, res) => {
   res.clearCookie("jwt");
-  res.sendStatus( StatusCodes.OK );
+  res.sendStatus(StatusCodes.OK);
 };
 
 module.exports = { login, register, logoff };
