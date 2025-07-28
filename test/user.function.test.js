@@ -1,27 +1,21 @@
 require("dotenv").config();
 const request = require("supertest");
 process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
-const { PrismaClient } = require("@prisma/client");
+const prisma = require("../db/prisma");
 let agent;
 let saveRes;
 const { app, server } = require("../app");
 
 beforeAll(async () => {
   // clear database
-  const prisma = new PrismaClient();
   await prisma.Task.deleteMany(); // delete all tasks
   await prisma.User.deleteMany(); // delete all users
-  prisma.$disconnect();
   agent = request.agent(app);
 });
 
 afterAll(async () => {
-  await new Promise((resolve, reject) => {
-    server.close((err) => {
-      if (err) reject(err);
-      else resolve();
-    });
-  });
+  prisma.$disconnect();
+  server.close();
 });
 
 describe("register a user ", () => {

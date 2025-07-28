@@ -1,5 +1,6 @@
 require("dotenv").config();
-const { PrismaClient } = require("@prisma/client");
+process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
+const prisma = require("../db/prisma");
 const { createUser } = require("../services/userService");
 const httpMocks = require("node-mocks-http");
 const EventEmitter = require('events').EventEmitter;
@@ -32,7 +33,6 @@ function MockResponseWithCookies() {
 
 beforeAll(async () => {
   // clear database
-  const prisma = new PrismaClient();
   await prisma.Task.deleteMany(); // delete all tasks
   await prisma.User.deleteMany(); // delete all users
   await createUser({
@@ -40,8 +40,13 @@ beforeAll(async () => {
     password: "Pa$$word20",
     name: "Bob",
   });
+
+});
+
+afterAll(() => {
   prisma.$disconnect();
 });
+
 let jwtCookie;
 
 describe("testing login, register, and logoff", () => {

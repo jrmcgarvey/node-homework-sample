@@ -31,6 +31,7 @@ const index = async (req, res) => {
 };
 
 const create = async (req, res) => {
+  if (!req.body) req.body = {};
   const { error, value } = taskSchema.validate(req.body, { abortEarly: false });
   if (error) {
     return res.status(StatusCodes.BAD_REQUEST).json({ error: error.details });
@@ -45,6 +46,7 @@ const create = async (req, res) => {
 };
 
 const update = async (req, res) => {
+  if (!req.body) req.body = {};
   const { error, value } = patchTaskSchema.validate(req.body, {
     abortEarly: false,
   });
