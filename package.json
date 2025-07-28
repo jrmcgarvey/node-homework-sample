@@ -6,7 +6,7 @@
   "type": "commonjs",
   "scripts": {
     "test": "npx cross-env NODE_ENV=test jest --testPathPatterns=test/ --verbose --maxWorkers=1",
-    "lesson11TDD": "npx cross-env NODE_ENV=test node ./lesson11TDD/jestConfig/run-lesson11-tdd.js",
+    "lesson9TDD": "npx cross-env NODE_ENV=test node ./lesson9TDD/jestConfig/run-lesson9-tdd.js",
     "tdd": "./tdd.sh",
     "dev": "nodemon app.js",
     "start": "node app"
