@@ -1,5 +1,6 @@
 require("dotenv").config();
-const { PrismaClient } = require("@prisma/client");
+process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
+const prisma = require("../db/prisma");
 const EventEmitter = require('events').EventEmitter;
 const { createUser } = require("../services/userService");
 const httpMocks = require("node-mocks-http");
@@ -21,10 +22,8 @@ let saveTaskId = null;
 
 beforeAll(async () => {
   // clear database
-  const prisma = new PrismaClient();
   await prisma.Task.deleteMany(); // delete all tasks
   await prisma.User.deleteMany(); // delete all users
-  prisma.$disconnect()
   user1 = await createUser({
     email: "bob@sample.com",
     password: "Pa$$word20",
@@ -35,6 +34,10 @@ beforeAll(async () => {
     password: "Pa$$word20",
     name: "Alice",
   });
+});
+
+afterAll(() => {
+  prisma.$disconnect();
 });
 
 describe("testing task creation", () => {
