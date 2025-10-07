@@ -4,7 +4,7 @@ const { StatusCodes } = require("http-status-codes");
 module.exports = async (req, res, next) => {
   const token = req?.cookies?.jwt;
   if (token) {
-    jwt.verify(token, (err, decoded) => {
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
       if (!err) {
         req.user.id = decoded.id;
         if (
