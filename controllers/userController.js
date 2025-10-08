@@ -1,7 +1,14 @@
 const { userSchema } = require("../validation/userSchema");
 const { StatusCodes } = require("http-status-codes");
-const { createUser } = require("../services/userService");
+const {
+  createUser,
+  generateUserPassword,
+  googleGetAccessToken,
+  googleGetUserInfo
+} = require("../services/userService");
 const { setJwtCookie } = require("../passport/passport");
+
+const prisma = require("../db/prisma");
 
 const login = async (req, res, next) => {
   passport.authenticate("local", { session: false }, (err, user) => {
@@ -13,6 +20,44 @@ const login = async (req, res, next) => {
       res.json({ name: user.name, csrfToken: req.user.csrfToken });
     }
   })(req, res);
+};
+
+const googleLogon = async (req, res) => {
+  try {
+    if (!req.body.code) {
+      throw new Error("Required body parameter missing: 'code'.");
+    }
+    const googleAccessToken = await googleGetAccessToken(req.body.code);
+    const googleUserInfo = await googleGetUserInfo(googleAccessToken);
+
+    if (!googleUserInfo.email || !googleUserInfo.isEmailVerified) {
+      throw new Error("The email is either missing or not verified.");
+    }
+    if (!googleUserInfo.name) {
+      throw new Error("The name is missing.");
+    }
+
+    let user = await prisma.user.findFirst({ where: { email: {
+      equals: googleUserInfo.email, mode: "insensitive"
+    }}});
+
+    if (!user) {
+      const randomPassword = generateUserPassword();
+      // TODO: notify user with generated password
+      console.log(`Creating user with password: ${randomPassword}`);
+      user = await createUser({
+        name: googleUserInfo.name,
+        email: googleUserInfo.email,
+        password: randomPassword
+      });
+    }
+    setJwtCookie(req, res, user);
+    return res.json({ name: user.name, csrfToken: req.user.csrfToken });
+  } catch (error) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      message: "Google auth error: " + error?.message
+    });
+  }
 };
 
 const register = async (req, res) => {
@@ -44,4 +89,4 @@ const logoff = async (req, res) => {
   res.sendStatus(StatusCodes.OK);
 };
 
-module.exports = { login, register, logoff };
+module.exports = { login, googleLogon, register, logoff };
