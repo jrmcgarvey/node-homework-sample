@@ -46,7 +46,7 @@ if (origins.length) {
   );
 }
 
-const { jwtMiddleware } = require("./passport/passport");
+const jwtMiddleware = require("./middleware/jwtMiddleware");
 const userRouter = require("./routes/user");
 app.use("/user", userRouter);
 const taskRouter = require("./routes/task");
