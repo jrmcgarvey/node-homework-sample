@@ -1,45 +1,47 @@
-const passport = require("passport");
 const { userSchema } = require("../validation/userSchema");
-const jwt = require("jsonwebtoken");
 const { StatusCodes } = require("http-status-codes");
+const { createUser, verifyUserPassword } = require("../services/userService");
 const { randomUUID } = require("crypto");
-
-const { createUser } = require("../services/userService");
+const jwt = require("jsonwebtoken");
 
 const setJwtCookie = (req, res, user) => {
   // Sign JWT
-  const payload = { id: user.id, csrfToken: randomUUID() };
-  req.user = payload;
-  const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" });
-  const sameSite = process.env.NODE_ENV === "production" ? "None" : "Strict";
+  const payload = { id: user.id, csrfToken: randomUUID() }; 
+  req.user = payload; // this is a convenient way to return the csrf token to the caller.
+  const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" }); // 1 hour expiration
 
-  // Set cookie
+  // Set cookie.  Note that the cookie flags have to be different in production and in test.
   res.cookie("jwt", token, {
+    ...(process.env.NODE_ENV === "production" && { domain: req.hostname }), // add domain into cookie for production only
     // httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite,
-    maxAge: 3600000,
+    sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
+    maxAge: 3600000, // 1 hour expiration.  Ends up as max-age 3600 in the cookie.
   });
+  return payload.csrfToken; // this is needed in the body returned by login() or register()
 };
 
 const login = async (req, res) => {
-  passport.authenticate("local", { session: false }, (err, user) => {
-    if (err) throw err;
-    if (!user) {
-      res.status(StatusCodes.UNAUTHORIZED).json({ message: "Login failed" });
-    } else {
-      setJwtCookie(req, res, user);
-      res.json({ name: user.name, csrfToken: req.user.csrfToken });
-    }
-  })(req, res);
+  const { user, isValid } = await verifyUserPassword(
+    req?.body?.email,
+    req?.body?.password,
+  );
+  if (!isValid) {
+    return res
+      .status(StatusCodes.UNAUTHORIZED)
+      .json({ message: "Authentication Failed." });
+  }
+  const csrfToken = setJwtCookie(req, res, user);
+  res
+    .status(StatusCodes.OK)
+    .json({ name: user.name, csrfToken });
 };
 
 const register = async (req, res) => {
-  const { err, value } = userSchema.validate(req.body, { abortEarly: false });
-  if (err) {
-    return res
-      .status(StatusCodes.BAD_REQUEST)
-      .res.json({ message: err.message });
+  if (!req.body) req.body = {};
+  const { error, value } = userSchema.validate(req.body, { abortEarly: false });
+  if (error) {
+    return res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
   }
   let user = null;
   try {
@@ -53,15 +55,15 @@ const register = async (req, res) => {
       throw e;
     }
   }
-  setJwtCookie(req, res, user);
+  const csrfToken = setJwtCookie(req, res, user);
   return res
     .status(StatusCodes.CREATED)
-    .json({ name: value.name, csrfToken: req.user.csrfToken });
+    .json({ name: value.name, csrfToken });
 };
 
 const logoff = async (req, res) => {
   // res.clearCookie("jwt");
-  res.json({});
+  res.sendStatus(StatusCodes.OK);
 };
 
 module.exports = { login, register, logoff };
