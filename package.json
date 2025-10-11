@@ -8,7 +8,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "tdd": "./tdd.sh",
     "dev": "nodemon app.js",
-    "start": "node app"
+    "start": "node app",
+    "lint": "eslint ."
   },
   "author": "",
   "license": "ISC",
