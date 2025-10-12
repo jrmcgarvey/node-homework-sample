@@ -5,16 +5,24 @@ const pluginJest = require('eslint-plugin-jest');
 
 module.exports = defineConfig([
   {
-    files: ["**/*.{js,mjs,cjs}"],
+    files: ["**/*.{mjs,cjs}"],
     plugins: { js },
     extends: ["js/recommended"],
   },
   {
     files: ["**/*.js"],
-    languageOptions: { sourceType: "commonjs", globals: { ...globals.node } },
+    ignores: ["./tdd/**/*.js", "./test/**/*.js", "./load-db.js"],
+    languageOptions: {sourceType: "commonjs", globals: {...globals.node}},
+    plugins: {js},
+    extends: ["js/recommended"],
+    rules: {
+      "quotes": ["error", "double"],
+      "indent": ["error", 2, {"SwitchCase": 1}],
+      "semi": ["error", "always"],
+    },
   },
   {
-    files: ["**/*.{js,mjs,cjs}"],
+    files: ["**/*.{mjs,cjs}"],
     languageOptions: { globals: globals.browser },
   },
   {
