@@ -1,7 +1,7 @@
 const { taskSchema, patchTaskSchema } = require("../validation/taskSchema.js");
 const { StatusCodes } = require("http-status-codes");
 
-const prisma = require("../db/prisma")
+const prisma = require("../db/prisma");
 
 const index = async (req, res) => {
   const options = {
@@ -9,18 +9,18 @@ const index = async (req, res) => {
       userId: req.user.id,
     },
     omit: { userId: true },
-  }
+  };
   if (req.query["sortBy"]) {
     let direction = "asc";
     if (req.query["sortDirection"] == "desc") {
       direction = "desc";
     }
-    const tempObj = {}
+    const tempObj = {};
     tempObj[req.query["sortBy"]] = direction;
     options["orderBy"]=tempObj;
   }
   if (req.query["find"]) {
-    options.where["title"] = { contains: req.query["find"]}
+    options.where["title"] = { contains: req.query["find"]};
   }
   const allTasks = await prisma.Task.findMany(options);
   if (allTasks.length == 0) {
@@ -32,17 +32,27 @@ const index = async (req, res) => {
 
 const create = async (req, res) => {
   if (!req.body) req.body = {};
-  const { error, value } = taskSchema.validate(req.body, { abortEarly: false });
-  if (error) {
-    return res.status(StatusCodes.BAD_REQUEST).json({ error: error.details });
-  }
-  value.userId = req.user.id;
-
-  const newTask = await prisma.Task.create({
-    data: value,
-    omit: { userId: true },
+  const maxTasksPerUser = parseInt(process.env.MAX_TASKS_PER_USER, 10);
+  const existingTasksCount = await prisma.Task.count({
+    where: { userId: req.user?.id }
   });
-  res.status(StatusCodes.CREATED).json(newTask);
+  if (existingTasksCount >= maxTasksPerUser) {
+    return res.status(StatusCodes.TOO_MANY_REQUESTS).json({
+      error: `Maximum tasks exceeded (${maxTasksPerUser}).`
+    });
+  } else {
+    const { error, value } = taskSchema.validate(req.body, {abortEarly: false});
+    if (error) {
+      return res.status(StatusCodes.BAD_REQUEST).json({error: error.details});
+    }
+    value.userId = req.user.id;
+
+    const newTask = await prisma.Task.create({
+      data: value,
+      omit: { userId: true },
+    });
+    res.status(StatusCodes.CREATED).json(newTask);
+  }
 };
 
 const update = async (req, res) => {

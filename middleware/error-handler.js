@@ -1,9 +1,9 @@
 const { StatusCodes } = require("http-status-codes");
-const errorHandlerMiddleware = (err, req, res, _next) => {
+const errorHandlerMiddleware = (err, req, res) => {
   console.log(
     "Internal server error",
     err.constructor.name,
-    JSON.stringify(err, ["name", "message", "stack"]),
+    JSON.stringify(err, ["name", "message", "stack"])
   );
   if (!res.headerSent) {
     return res
