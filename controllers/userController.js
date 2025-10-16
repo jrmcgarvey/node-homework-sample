@@ -5,7 +5,7 @@ const {
   verifyUserPassword,
   generateUserPassword,
   googleGetAccessToken,
-  googleGetUserInfo
+  googleGetUserInfo,
 } = require("../services/userService");
 const { randomUUID } = require("crypto");
 const jwt = require("jsonwebtoken");
@@ -40,9 +40,7 @@ const login = async (req, res) => {
       .json({ message: "Authentication Failed." });
   }
   const csrfToken = setJwtCookie(req, res, user);
-  res
-    .status(StatusCodes.OK)
-    .json({ name: user.name, csrfToken });
+  res.status(StatusCodes.OK).json({ name: user.name, csrfToken });
 };
 
 const googleLogon = async (req, res) => {
@@ -60,9 +58,14 @@ const googleLogon = async (req, res) => {
       throw new Error("The name is missing.");
     }
 
-    let user = await prisma.user.findFirst({ where: { email: {
-      equals: googleUserInfo.email, mode: "insensitive"
-    }}});
+    let user = await prisma.user.findFirst({
+      where: {
+        email: {
+          equals: googleUserInfo.email,
+          mode: "insensitive",
+        },
+      },
+    });
 
     if (!user) {
       const randomPassword = generateUserPassword();
@@ -71,20 +74,53 @@ const googleLogon = async (req, res) => {
       user = await createUser({
         name: googleUserInfo.name,
         email: googleUserInfo.email,
-        password: randomPassword
+        password: randomPassword,
       });
     }
     setJwtCookie(req, res, user);
     return res.json({ name: user.name, csrfToken: req.user.csrfToken });
   } catch (error) {
     return res.status(StatusCodes.BAD_REQUEST).json({
-      message: "Google auth error: " + error?.message
+      message: "Google auth error: " + error?.message,
     });
   }
 };
 
 const register = async (req, res) => {
   if (!req.body) req.body = {};
+  let isPerson = false;
+  if (req.body.recaptchaToken) {
+    const token = req.body.recaptchaToken;
+    const params = new URLSearchParams();
+    params.append("secret", process.env.RECAPTCHA_SECRET);
+    params.append("response", token);
+    params.append("remoteip", req.ip);
+    const response = await fetch(
+      // might throw an error that would cause a 500 from the error handler
+      "https://www.google.com/recaptcha/api/siteverify",
+      {
+        method: "POST",
+        body: params.toString(),
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      },
+    );
+    const data = await response.json();
+    if (data.success) isPerson = true;
+    delete req.body.recaptchaToken;
+  } else if (
+    process.env.RECAPTCHA_BYPASS &&
+    req.get("X-Recaptcha-Test") === process.env.RECAPTCHA_BYPASS
+  ) {
+    // might be a test environment
+    isPerson = true;
+  }
+  if (!isPerson) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ message: "We can't tell if you're a person or a bot." });
+  }
   const { error, value } = userSchema.validate(req.body, { abortEarly: false });
   if (error) {
     return res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
@@ -102,9 +138,7 @@ const register = async (req, res) => {
     }
   }
   const csrfToken = setJwtCookie(req, res, user);
-  return res
-    .status(StatusCodes.CREATED)
-    .json({ name: value.name, csrfToken });
+  return res.status(StatusCodes.CREATED).json({ name: value.name, csrfToken });
 };
 
 const logoff = async (req, res) => {
