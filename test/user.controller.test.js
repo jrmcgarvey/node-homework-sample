@@ -4,8 +4,8 @@ const prisma = require("../db/prisma");
 const { createUser } = require("../services/userService");
 const httpMocks = require("node-mocks-http");
 const EventEmitter = require('events').EventEmitter;
-const { register, logoff } = require("../controllers/userController");
-const { logonRouteHandler, jwtMiddleware } = require("../passport/passport");
+const { register, logoff, login } = require("../controllers/userController");
+const jwtMiddleware = require("../middleware/jwtMiddleware");
 const waitForRouteHandlerCompletion = require("./waitForRouteHandlerCompletion.js")
 const jwt = require("jsonwebtoken");
 let saveReq;
@@ -56,7 +56,7 @@ describe("testing login, register, and logoff", () => {
       body: { email: "bob@sample.com", password: "Pa$$word20" },
     });
     saveRes = MockResponseWithCookies();
-    await waitForRouteHandlerCompletion(logonRouteHandler,req,saveRes);
+    await waitForRouteHandlerCompletion(login,req,saveRes);
     expect(saveRes.statusCode).toBe(200); // success!
   });
   it("35. A string in the Set-Cookie array starts with jwt=.", () => {
@@ -80,7 +80,7 @@ describe("testing login, register, and logoff", () => {
       body: { email: "bob@sample.com", password: "bad password" },
     });
     saveRes = MockResponseWithCookies();
-    await waitForRouteHandlerCompletion(logonRouteHandler,req,saveRes);
+    await waitForRouteHandlerCompletion(login,req,saveRes);
     expect(saveRes.statusCode).toBe(401);
   });
   it("40. You can't register with an email address that is already registered.", async () => {
@@ -90,6 +90,9 @@ describe("testing login, register, and logoff", () => {
         email: "bob@sample.com",
         name: "another Bob",
         password: "Pa$$word20",
+      },
+      headers: {
+        "X-Recaptcha-Test": process.env.RECAPTCHA_BYPASS,
       },
     });
     saveRes = MockResponseWithCookies();
@@ -104,6 +107,9 @@ describe("testing login, register, and logoff", () => {
         name: "Manuel",
         password: "Pa$$word20",
       },
+      headers: {
+        "X-Recaptcha-Test": process.env.RECAPTCHA_BYPASS,
+      },
     });
     saveRes = MockResponseWithCookies();
     await waitForRouteHandlerCompletion(register, req, saveRes);
@@ -115,7 +121,7 @@ describe("testing login, register, and logoff", () => {
       body: { email: "manuel@sample.com", password: "Pa$$word20" },
     });
     saveRes = MockResponseWithCookies();
-    await waitForRouteHandlerCompletion(logonRouteHandler,req,saveRes);
+    await waitForRouteHandlerCompletion(login,req,saveRes);
     expect(saveRes.statusCode).toBe(200);
   });
   it("43. You can now logoff.", async () => {

@@ -1,12 +1,11 @@
 {
-  "name": "node-homework",
+  "name": "task-store",
   "version": "1.0.0",
-  "description": "Code the Dream Node/Express Homework",
-  "main": "index.js",
+  "description": "Code the Dream task store",
+  "main": "app.js",
   "type": "commonjs",
   "scripts": {
     "test": "npx cross-env NODE_ENV=test jest --testPathPatterns=test/ --verbose --maxWorkers=1",
-    "tdd": "./tdd.sh",
     "dev": "nodemon app.js",
     "start": "node app",
     "lint": "eslint ."
