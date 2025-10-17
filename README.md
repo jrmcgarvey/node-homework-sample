@@ -19,6 +19,7 @@ ALLOWED_ORIGINS=http://localhost:3000
 GOOGLE_CLIENT_ID (for support of Google logon)
 GOOGLE_CLIENT_SECRET
 RECAPTCHA_SECRET
+MAX_TASKS_PER_USER (default is 100)
 ```
 
 The following environment variables are needed in the test environment.
