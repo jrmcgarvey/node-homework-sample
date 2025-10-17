@@ -46,16 +46,19 @@ const login = async (req, res) => {
 const googleLogon = async (req, res) => {
   try {
     if (!req.body.code) {
-      throw new Error("Required body parameter missing: 'code'.");
+      // throw new Error("Required body parameter missing: 'code'.");
+      return res.status(StatusCodes.UNAUTHORIZED).json({message: "The Google authentication code was not provided."});
     }
     const googleAccessToken = await googleGetAccessToken(req.body.code);
     const googleUserInfo = await googleGetUserInfo(googleAccessToken);
 
     if (!googleUserInfo.email || !googleUserInfo.isEmailVerified) {
-      throw new Error("The email is either missing or not verified.");
+      // throw new Error("The email is either missing or not verified.");
+      return res.status(StatusCodes.UNAUTHORIZED).json({message: "Google did not include the email, or it hasn't been verified."});
     }
     if (!googleUserInfo.name) {
-      throw new Error("The name is missing.");
+      // throw new Error("The name is missing.");
+      return res.status(StatusCodes.UNAUTHORIZED).json({message: "Google did not include the user name."});
     }
 
     let user = await prisma.user.findFirst({
@@ -70,7 +73,7 @@ const googleLogon = async (req, res) => {
     if (!user) {
       const randomPassword = generateUserPassword();
       // TODO: notify user with generated password
-      console.log(`Creating user with password: ${randomPassword}`);
+      console.log(`Creating user with a random password.`);
       user = await createUser({
         name: googleUserInfo.name,
         email: googleUserInfo.email,

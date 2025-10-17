@@ -32,7 +32,8 @@ const index = async (req, res) => {
 
 const create = async (req, res) => {
   if (!req.body) req.body = {};
-  const maxTasksPerUser = parseInt(process.env.MAX_TASKS_PER_USER, 10);
+  let maxTasksPerUser = 100;
+  if (process.env.MAX_TASKS_PER_USER) maxTasksPerUser = parseInt(process.env.MAX_TASKS_PER_USER, 10);
   const existingTasksCount = await prisma.Task.count({
     where: { userId: req.user?.id }
   });
